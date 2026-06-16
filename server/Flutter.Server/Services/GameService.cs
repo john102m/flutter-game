@@ -6,6 +6,7 @@ public class GameService
 {
     private const int Brokerage = 500; // £5 in pence
     private GameState? _game;
+    private readonly MarketNewsDeck _deck = new();
 
     public GameState CreateGame(string hostConnectionId, string hostName)
     {
@@ -86,16 +87,88 @@ public class GameService
     {
         if (!IsCurrentPlayer(connectionId)) return null!;
 
-        var colourDie = Random.Shared.Next(0, 6); // company 0-5
-        var numberDie = Random.Shared.Next(1, 7); // 1-6
+        var colourDie = 0; // DEBUG: always Saudi Aramco
 
         // Move traveller up (lower row number = higher on board)
         var company = _game!.Companies[colourDie];
+
+        // DEBUG: always roll 1 to hit every row sequentially
+        var numberDie = 1;
+
         company.TravellerPegRow = Math.Max(2, company.TravellerPegRow - numberDie);
+
+        // Check board effects
+        BoardEffect? effect = null;
+
+        if (company.TravellerPegRow is 3 or 6)
+        {
+            if (company.HasAntiSlump)
+            {
+                company.HasAntiSlump = false;
+                effect = new BoardEffect("AntiSlump");
+                Console.WriteLine($"[SLUMP] Company {colourDie} protected by anti-slump");
+            }
+            else
+            {
+                var before = company.TravellerPegRow;
+                company.TravellerPegRow = Math.Min(company.TravellerPegRow + 6, company.ParentPegRow);
+                effect = new BoardEffect("Slump");
+                Console.WriteLine($"[SLUMP] Company {colourDie} dropped from row {before} to {company.TravellerPegRow}");
+            }
+        }
+        else if (company.TravellerPegRow == 11)
+        {
+            var card = _deck.Draw();
+            effect = new BoardEffect("MarketNews", card.Text, card.Id);
+            Console.WriteLine($"[M] Company {colourDie} drew card #{card.Id}: {card.Text} ({card.Effect} {card.Value})");
+            ApplyCard(card, company);
+        }
 
         // Advance to next player
         _game.CurrentPlayerIndex = (_game.CurrentPlayerIndex + 1) % _game.Players.Count;
 
-        return new DiceResult(colourDie, numberDie);
+        return new DiceResult(colourDie, numberDie, effect);
+    }
+
+    private void ApplyCard(MarketNewsCard card, Company company)
+    {
+        switch (card.Effect)
+        {
+            case CardEffect.TravellerAdvance:
+                company.TravellerPegRow = Math.Max(2, company.TravellerPegRow - card.Value);
+                break;
+            case CardEffect.TravellerDown:
+                company.TravellerPegRow = Math.Min(company.TravellerPegRow + card.Value, company.ParentPegRow);
+                break;
+            case CardEffect.TravellerReturnsToParent:
+                company.TravellerPegRow = company.ParentPegRow;
+                break;
+            case CardEffect.ParentPegUp:
+                company.ParentPegRow = Math.Max(12, company.ParentPegRow - card.Value);
+                break;
+            case CardEffect.ParentPegDown:
+                company.ParentPegRow = Math.Min(32, company.ParentPegRow + card.Value);
+                break;
+            case CardEffect.Dividend:
+                PayDividend(company.Index, card.Value);
+                break;
+            case CardEffect.AntiSlump:
+                company.HasAntiSlump = true;
+                break;
+        }
+    }
+
+    private void PayDividend(int companyIndex, int percent)
+    {
+        foreach (var player in _game!.Players)
+        {
+            var certs = player.Holdings[companyIndex];
+            if (certs > 0)
+            {
+                // percent per 100 shares (1 cert = 100 shares), price is in pence
+                var price = GameState.PriceForRow(_game.Companies[companyIndex].ParentPegRow);
+                player.Cash += certs * price * percent / 100;
+            }
+        }
     }
 }

@@ -16,6 +16,7 @@ public class Company
     public int Index { get; set; }
     public int ParentPegRow { get; set; } = 22; // PAR = row 22 (£100)
     public int TravellerPegRow { get; set; } = 22; // starts on parent
+    public bool HasAntiSlump { get; set; }
 }
 
 public class GameState
@@ -33,5 +34,7 @@ public class GameState
     public static int PriceForRow(int row) => row >= 32 ? 0 : (22 - row + 10) * 1000;
 }
 
-public record DiceResult(int ColourDie, int NumberDie);
+public record DiceResult(int ColourDie, int NumberDie, BoardEffect? Effect = null);
+
+public record BoardEffect(string Type, string? CardText = null, int? CardId = null);
 

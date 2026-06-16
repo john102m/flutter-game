@@ -81,7 +81,8 @@ public class GameHub(GameService gameService) : Hub
             return;
         }
 
-        await Clients.All.SendAsync("DiceRolled", result.ColourDie, result.NumberDie);
+        await Clients.All.SendAsync("DiceRolled", result.ColourDie, result.NumberDie,
+            result.Effect?.Type ?? "", result.Effect?.CardText ?? "", CompanyName(result.ColourDie));
         await BroadcastTurnState();
     }
 
@@ -102,9 +103,17 @@ public class GameHub(GameService gameService) : Hub
                 c.Index,
                 c.ParentPegRow,
                 c.TravellerPegRow,
+                c.HasAntiSlump,
                 Price = GameState.PriceForRow(c.ParentPegRow)
             }).ToArray()
         };
         await Clients.All.SendAsync("TurnState", state);
     }
+
+    private static string CompanyName(int index) => index switch
+    {
+        0 => "Saudi Aramco", 1 => "ExxonMobil", 2 => "Shell",
+        3 => "Chevron", 4 => "TotalEnergies", 5 => "BP",
+        _ => "Unknown"
+    };
 }

@@ -4,6 +4,7 @@ data class CompanyState(
     val index: Double = 0.0,
     val parentPegRow: Double = 22.0,
     val travellerPegRow: Double = 22.0,
+    val hasAntiSlump: Boolean = false,
     val price: Double = 10000.0
 ) {
     val indexInt get() = index.toInt()
