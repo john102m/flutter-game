@@ -17,3 +17,6 @@ tv/.idea/
 # OS
 .DS_Store
 Thumbs.db
+
+# Personal notes
+docs/GIT-CHEATSHEET.md

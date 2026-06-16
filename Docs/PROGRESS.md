@@ -33,19 +33,9 @@
 
 ### Known Issues
 
-**TV recomposition not triggering (UNRESOLVED):**
-- SignalR callback receives data correctly (confirmed via logcat)
-- State writes via `scope.launch(Dispatchers.Main)` do not trigger Compose recomposition
-- UI only updates when emulator window is resized (forces a re-layout)
-- Attempted fixes:
-  1. `mutableStateOf` with data class → no recomposition
-  2. `mutableIntStateOf` per peg → no recomposition
-  3. `key(stateVersion)` wrapper → no recomposition
-  4. `ViewModel` + `StateFlow` + `collectAsStateWithLifecycle` → app crashed (dependency issues)
-  5. `Snapshot.withMutableSnapshot` → app crashed
-  6. `Handler(Looper.getMainLooper()).post` → didn't deploy (compile errors)
-  7. Current: `scope.launch(Dispatchers.Main)` + `updateCount` read in composition → awaiting test
-- **Root cause theory:** emulator rendering issue, or Compose recomposer not scheduling frames when state changes from SignalR thread. Needs testing on real Fire TV hardware.
+**TV recomposition (RESOLVED):**
+- Was an emulator issue — restarting the emulator fixed it. Animations and state updates working.
+- **Note:** If this recurs, restart the emulator first. Do NOT make frantic code changes chasing it.
 
 **Android Studio deploy deception:**
 - Compile errors do NOT prevent deployment — AS deploys the previously cached APK
@@ -70,11 +60,10 @@
 
 ### What's Next
 
-1. **Fix TV recomposition** — test on real hardware (Thursday) or investigate emulator frame scheduling
-2. **Board effects** — SLUMP (drop back 6), Market News cards, "M" landing logic
-3. **Round end** — trigger when traveller hits row 2, dividend processing, parent peg movement
-4. **Win condition** — £600+ total capital check during dividends
-5. **TV animations** — peg gliding (code ready, blocked by recomposition issue)
+1. **Board effects** — SLUMP (drop back 6), Market News cards, "M" landing logic
+2. **Round end** — trigger when traveller hits row 2, dividend processing, parent peg movement
+3. **Win condition** — £600+ total capital check during dividends
+4. **TV animations** — peg gliding (now unblocked)
 
 ---
 
