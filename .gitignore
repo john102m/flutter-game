@@ -1,0 +1,19 @@
+# Server (.NET)
+server/**/bin/
+server/**/obj/
+server/**/.vs/
+
+# Handset (Node/React)
+handset/node_modules/
+handset/dist/
+
+# TV (Android/Kotlin)
+tv/.gradle/
+tv/app/build/
+tv/build/
+tv/local.properties
+tv/.idea/
+
+# OS
+.DS_Store
+Thumbs.db

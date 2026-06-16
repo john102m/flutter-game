@@ -1,0 +1,64 @@
+client:789 [vite] connecting...
+react-dom.development.js:29895 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+client:912 [vite] connected.
+App.tsx:36 [2026-06-16T18:08:27.756Z] Error: Failed to start the connection: Error: The connection was stopped during negotiation.
+log @ Utils.ts:185
+_startInternal @ HttpConnection.ts:302
+await in _startInternal
+start @ HttpConnection.ts:137
+_startInternal @ HubConnection.ts:228
+_startWithStateTransitions @ HubConnection.ts:202
+start @ HubConnection.ts:189
+anonymousCallbackTo: useEffect @ App.tsx:36
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+(anonymous) @ react-dom.development.js:26808
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+(anonymous) @ scheduler.development.js:533
+postMessage
+(anonymous) @ scheduler.development.js:574
+requestHostCallback @ scheduler.development.js:588
+unstable_scheduleCallback @ scheduler.development.js:441
+scheduleCallback$1 @ react-dom.development.js:27576
+ensureRootIsScheduled @ react-dom.development.js:25722
+scheduleUpdateOnFiber @ react-dom.development.js:25570
+updateContainer @ react-dom.development.js:28897
+(anonymous) @ react-dom.development.js:29353
+globalCode: http://localhost:3000/src/main.tsx @ main.tsx:6
+HttpConnection.ts:251 Uncaught (in promise) AbortError: The connection was stopped during negotiation.
+    at HttpConnection._startInternal (HttpConnection.ts:251:31)
+_startInternal @ HttpConnection.ts:251
+await in _startInternal
+start @ HttpConnection.ts:137
+_startInternal @ HubConnection.ts:228
+_startWithStateTransitions @ HubConnection.ts:202
+start @ HubConnection.ts:189
+anonymousCallbackTo: useEffect @ App.tsx:36
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+(anonymous) @ react-dom.development.js:26808
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+(anonymous) @ scheduler.development.js:533
+postMessage
+(anonymous) @ scheduler.development.js:574
+requestHostCallback @ scheduler.development.js:588
+unstable_scheduleCallback @ scheduler.development.js:441
+scheduleCallback$1 @ react-dom.development.js:27576
+ensureRootIsScheduled @ react-dom.development.js:25722
+scheduleUpdateOnFiber @ react-dom.development.js:25570
+updateContainer @ react-dom.development.js:28897
+(anonymous) @ react-dom.development.js:29353
+globalCode: http://localhost:3000/src/main.tsx @ main.tsx:6
+Utils.ts:191 [2026-06-16T18:08:27.819Z] Information: WebSocket connected to ws://192.168.1.177:5000/gamehub?id=GJxzRLx2m0s-uFVPufSGLQ.

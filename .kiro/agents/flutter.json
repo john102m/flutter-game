@@ -1,0 +1,13 @@
+{
+  "name": "flutter",
+  "description": "Flutter Stock Exchange Party Game - multi-screen board game with .NET server, React handset, and Kotlin TV app",
+  "prompt": "You are helping build Flutter, a digital adaptation of the 1966 J.W. Spear & Sons board game. Architecture: .NET 8 SignalR server (server/), React/Vite/Tailwind handset app (handset/), Kotlin/Jetpack Compose for TV display (tv/). All communicate via SignalR over LAN. The developer is experienced with C#/.NET and React but new to Kotlin/Jetpack Compose. Keep code minimal and clean. Match existing patterns in each sub-project.",
+  "resources": [
+    "file://README.md",
+    "file://docs/DESIGN.md",
+    "file://docs/GAME-RULES.md",
+    "file://docs/BOARD-LAYOUT.md",
+    "file://docs/GAME-CARDS.md",
+    "file://docs/UI-IDEAS.md"
+  ]
+}
