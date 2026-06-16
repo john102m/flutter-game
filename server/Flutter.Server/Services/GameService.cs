@@ -87,11 +87,14 @@ public class GameService
     {
         if (!IsCurrentPlayer(connectionId)) return null!;
 
-        var colourDie = Random.Shared.Next(0, 6); // company 0-5
-        var numberDie = Random.Shared.Next(1, 7); // 1-6
+        var colourDie = 0; // DEBUG: always Saudi Aramco
 
         // Move traveller up (lower row number = higher on board)
         var company = _game!.Companies[colourDie];
+
+        // DEBUG: always roll 1 to hit every row sequentially
+        var numberDie = 1;
+
         company.TravellerPegRow = Math.Max(2, company.TravellerPegRow - numberDie);
 
         // Check board effects
@@ -103,17 +106,21 @@ public class GameService
             {
                 company.HasAntiSlump = false;
                 effect = new BoardEffect("AntiSlump");
+                Console.WriteLine($"[SLUMP] Company {colourDie} protected by anti-slump");
             }
             else
             {
+                var before = company.TravellerPegRow;
                 company.TravellerPegRow = Math.Min(company.TravellerPegRow + 6, company.ParentPegRow);
                 effect = new BoardEffect("Slump");
+                Console.WriteLine($"[SLUMP] Company {colourDie} dropped from row {before} to {company.TravellerPegRow}");
             }
         }
         else if (company.TravellerPegRow == 11)
         {
             var card = _deck.Draw();
             effect = new BoardEffect("MarketNews", card.Text, card.Id);
+            Console.WriteLine($"[M] Company {colourDie} drew card #{card.Id}: {card.Text} ({card.Effect} {card.Value})");
             ApplyCard(card, company);
         }
 

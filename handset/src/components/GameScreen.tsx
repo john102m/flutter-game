@@ -22,6 +22,12 @@ interface TurnState {
   companies: CompanyState[];
 }
 
+interface BoardEffect {
+  type: string;
+  cardText?: string;
+  cardId?: number;
+}
+
 interface Props {
   connection: HubConnection;
   playerName: string;
@@ -29,12 +35,15 @@ interface Props {
 
 export function GameScreen({ connection, playerName }: Props) {
   const [turnState, setTurnState] = useState<TurnState | null>(null);
-  const [lastRoll, setLastRoll] = useState<{ colour: number; number: number } | null>(null);
+  const [lastRoll, setLastRoll] = useState<{ colour: number; number: number; effect?: BoardEffect } | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
     connection.on("TurnState", (state: TurnState) => setTurnState(state));
-    connection.on("DiceRolled", (colour: number, num: number) => setLastRoll({ colour, number: num }));
+    connection.on("DiceRolled", (colour: number, num: number, effectType: string, cardText: string, companyName: string) => {
+      const effect: BoardEffect | undefined = effectType ? { type: effectType, cardText: cardText || undefined } : undefined;
+      setLastRoll({ colour, number: num, effect });
+    });
     connection.on("Error", (msg: string) => setError(msg));
 
     connection.invoke("GetState");
@@ -71,6 +80,13 @@ export function GameScreen({ connection, playerName }: Props) {
       {lastRoll && (
         <div className="text-center text-sm text-gray-400">
           Last roll: {COMPANIES[lastRoll.colour]} moved {lastRoll.number}
+        </div>
+      )}
+      {lastRoll?.effect && (
+        <div className={`text-center text-sm font-bold ${lastRoll.effect.type === "Slump" ? "text-red-400" : lastRoll.effect.type === "AntiSlump" ? "text-green-400" : "text-yellow-300"}`}>
+          {lastRoll.effect.type === "Slump" && "📉 SLUMP! Dropped back 6"}
+          {lastRoll.effect.type === "AntiSlump" && "🛡️ Anti-Slump! Protected"}
+          {lastRoll.effect.type === "MarketNews" && `📰 ${lastRoll.effect.cardText}`}
         </div>
       )}
 
