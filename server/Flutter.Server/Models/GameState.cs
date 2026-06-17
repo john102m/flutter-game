@@ -34,7 +34,11 @@ public class GameState
     public static int PriceForRow(int row) => row >= 32 ? 0 : (22 - row + 10) * 1000;
 }
 
-public record DiceResult(int ColourDie, int NumberDie, BoardEffect? Effect = null);
+public record DiceResult(int ColourDie, int NumberDie, BoardEffect? Effect = null, RoundEndResult? RoundEnd = null, int? LandedRow = null);
 
 public record BoardEffect(string Type, string? CardText = null, int? CardId = null);
+
+public record CompanyRoundResult(int CompanyIndex, int DividendPercent, int ParentMove, int OldParentRow, int NewParentRow);
+
+public record RoundEndResult(CompanyRoundResult[] Companies, string? Winner, int WinnerCapital);
 

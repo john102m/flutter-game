@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.flutter.tv.model.PlayerState
 
-private val companyNames = listOf("Aramco", "Exxon", "Shell", "Chevron", "Total", "BP")
+private val companyNames = listOf("Aramco", "Exxon", "Shell", "Chevron", "Esso", "BP")
 
 @Composable
 fun PlayerPanel(

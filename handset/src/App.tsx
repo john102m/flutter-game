@@ -8,12 +8,12 @@ export type Phase = "connect" | "lobby" | "playing";
 
 function App() {
   const connection = useConnection();
-  const [phase, setPhase] = useState<Phase>("connect");
-  const [gameCode, setGameCode] = useState("");
+  const [phase, setPhase] = useState<Phase>(() => (sessionStorage.getItem("phase") as Phase) || "connect");
+  const [gameCode, setGameCode] = useState(() => sessionStorage.getItem("gameCode") || "");
   const [players, setPlayers] = useState<string[]>([]);
-  const [isHost, setIsHost] = useState(false);
+  const [isHost, setIsHost] = useState(() => sessionStorage.getItem("isHost") === "true");
   const [error, setError] = useState("");
-  const [playerName, setPlayerName] = useState("");
+  const [playerName, setPlayerName] = useState(() => sessionStorage.getItem("playerName") || "");
   const joinedRef = useRef(false);
 
   useEffect(() => {
@@ -23,15 +23,52 @@ function App() {
       setGameCode(code);
       setIsHost(true);
       setPhase("lobby");
+      sessionStorage.setItem("gameCode", code);
+      sessionStorage.setItem("isHost", "true");
+      sessionStorage.setItem("phase", "lobby");
     });
 
     connection.on("LobbyUpdated", (names: string[]) => {
       setPlayers(names);
-      if (joinedRef.current) setPhase("lobby");
+      if (joinedRef.current) {
+        setPhase("lobby");
+        sessionStorage.setItem("phase", "lobby");
+      }
     });
 
-    connection.on("GameStarted", () => setPhase("playing"));
-    connection.on("Error", (msg: string) => setError(msg));
+    connection.on("GameStarted", () => {
+      setPhase("playing");
+      sessionStorage.setItem("phase", "playing");
+    });
+
+    connection.on("Rejoined", (serverPhase: string) => {
+      const p = serverPhase === "playing" ? "playing" : "lobby";
+      setPhase(p);
+      sessionStorage.setItem("phase", p);
+    });
+
+    connection.on("Error", (msg: string) => {
+      setError(msg);
+      // If rejoin failed, reset to connect screen
+      if (msg === "Could not rejoin") {
+        setPhase("connect");
+        sessionStorage.removeItem("phase");
+        sessionStorage.removeItem("gameCode");
+        sessionStorage.removeItem("isHost");
+      }
+    });
+
+    // Auto-rejoin if we have a stored session
+    const storedName = sessionStorage.getItem("playerName");
+    const storedPhase = sessionStorage.getItem("phase");
+    if (storedName && storedPhase && storedPhase !== "connect") {
+      connection.invoke("Rejoin", storedName).catch(() => {
+        setPhase("connect");
+        sessionStorage.removeItem("phase");
+        sessionStorage.removeItem("gameCode");
+        sessionStorage.removeItem("isHost");
+      });
+    }
 
     // Track join/create for phase transition and name capture
     const originalInvoke = connection.invoke.bind(connection);
@@ -39,9 +76,11 @@ function App() {
       if (args[0] === "JoinGame") {
         joinedRef.current = true;
         setPlayerName(args[2] as string);
+        sessionStorage.setItem("playerName", args[2] as string);
       }
       if (args[0] === "CreateGame") {
         setPlayerName(args[1] as string);
+        sessionStorage.setItem("playerName", args[1] as string);
       }
       return originalInvoke(...args);
     };
@@ -50,6 +89,7 @@ function App() {
       connection.off("GameCreated");
       connection.off("LobbyUpdated");
       connection.off("GameStarted");
+      connection.off("Rejoined");
       connection.off("Error");
     };
   }, [connection]);

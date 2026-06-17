@@ -34,7 +34,7 @@ private val COMPANY_COLOURS = listOf(
 )
 
 private val COMPANY_NAMES = listOf(
-    "Saudi\nAramco", "Exxon\nMobil", "Shell", "Chevron", "Total\nEnergies", "BP"
+    "Aramco", "Exxon", "Shell", "Chevron", "Esso", "BP"
 )
 
 @Composable
@@ -82,13 +82,15 @@ fun DiceRoll(
                 .background(COMPANY_COLOURS[displayColour]),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = COMPANY_NAMES[displayColour],
-                color = Color.White,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
-            )
+            if (!spinning) {
+                Text(
+                    text = COMPANY_NAMES[displayColour],
+                    color = Color.White,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+            }
         }
 
         Spacer(modifier = Modifier.width(16.dp))
@@ -103,6 +105,45 @@ fun DiceRoll(
         ) {
             Text(
                 text = displayNumber.toString(),
+                color = Color.Black,
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+@Composable
+fun DiceResult(colourResult: Int, numberResult: Int) {
+    Row(
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(60.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(COMPANY_COLOURS[colourResult]),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = COMPANY_NAMES[colourResult],
+                color = Color.White,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+        }
+        Spacer(modifier = Modifier.width(16.dp))
+        Box(
+            modifier = Modifier
+                .size(60.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(Color.White),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = numberResult.toString(),
                 color = Color.Black,
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Bold

@@ -50,6 +50,22 @@ public class GameHub(GameService gameService) : Hub
             await BroadcastTurnState();
     }
 
+    public async Task Rejoin(string playerName)
+    {
+        if (gameService.Rejoin(playerName, Context.ConnectionId))
+        {
+            var game = gameService.GetGame()!;
+            var phase = game.Phase.ToString().ToLower();
+            await Clients.Caller.SendAsync("Rejoined", phase);
+            if (game.Phase == GamePhase.Playing)
+                await BroadcastTurnState();
+        }
+        else
+        {
+            await Clients.Caller.SendAsync("Error", "Could not rejoin");
+        }
+    }
+
     public async Task BuyShares(int company)
     {
         var error = gameService.BuyShares(Context.ConnectionId, company);
@@ -58,6 +74,10 @@ public class GameHub(GameService gameService) : Hub
             await Clients.Caller.SendAsync("Error", error);
             return;
         }
+        var game = gameService.GetGame()!;
+        var player = game.Players.First(p => p.ConnectionId == Context.ConnectionId);
+        var price = GameState.PriceForRow(game.Companies[company].ParentPegRow);
+        await Clients.All.SendAsync("TradeExecuted", player.Name, "buy", CompanyName(company), price);
         await BroadcastTurnState();
     }
 
@@ -69,6 +89,10 @@ public class GameHub(GameService gameService) : Hub
             await Clients.Caller.SendAsync("Error", error);
             return;
         }
+        var game = gameService.GetGame()!;
+        var player = game.Players.First(p => p.ConnectionId == Context.ConnectionId);
+        var price = GameState.PriceForRow(game.Companies[company].ParentPegRow);
+        await Clients.All.SendAsync("TradeExecuted", player.Name, "sell", CompanyName(company), price);
         await BroadcastTurnState();
     }
 
@@ -82,7 +106,13 @@ public class GameHub(GameService gameService) : Hub
         }
 
         await Clients.All.SendAsync("DiceRolled", result.ColourDie, result.NumberDie,
-            result.Effect?.Type ?? "", result.Effect?.CardText ?? "", CompanyName(result.ColourDie));
+            result.Effect?.Type ?? "", result.Effect?.CardText ?? "", CompanyName(result.ColourDie), result.LandedRow);
+
+        if (result.RoundEnd != null)
+        {
+            await Clients.All.SendAsync("RoundEnd", result.RoundEnd);
+        }
+
         await BroadcastTurnState();
     }
 
@@ -112,8 +142,8 @@ public class GameHub(GameService gameService) : Hub
 
     private static string CompanyName(int index) => index switch
     {
-        0 => "Saudi Aramco", 1 => "ExxonMobil", 2 => "Shell",
-        3 => "Chevron", 4 => "TotalEnergies", 5 => "BP",
+        0 => "Aramco", 1 => "Exxon", 2 => "Shell",
+        3 => "Chevron", 4 => "Esso", 5 => "BP",
         _ => "Unknown"
     };
 }

@@ -22,11 +22,11 @@ import com.flutter.tv.ui.theme.FlutterTvTheme
 data class CompanyDef(val name: String, val color: Color)
 
 val companyDefs = listOf(
-    CompanyDef("Saudi Aramco", Color(0xFF1565C0)),
-    CompanyDef("ExxonMobil", Color(0xFFE53935)),
+    CompanyDef("Aramco", Color(0xFF1565C0)),
+    CompanyDef("Exxon", Color(0xFFE53935)),
     CompanyDef("Shell", Color(0xFF43A047)),
     CompanyDef("Chevron", Color(0xFF1E88E5)),
-    CompanyDef("TotalEnergies", Color(0xFFFFD600)),
+    CompanyDef("Esso", Color(0xFFFFD600)),
     CompanyDef("BP", Color(0xFFFF8C00)),
 )
 
@@ -64,7 +64,7 @@ val boardRows = listOf(
     BoardRow("30", RowType.PRICE, 29),
     BoardRow("20", RowType.PRICE, 30),
     BoardRow("10", RowType.PRICE, 31),
-    BoardRow("BANKRUPT", RowType.BANKRUPT, 32),
+    BoardRow("BNKRPT", RowType.BANKRUPT, 32),
 )
 
 @Composable
@@ -101,7 +101,7 @@ fun GameBoard(animatedTravellers: List<Int>, animatedParents: List<Int>, modifie
                 Text(
                     text = company.name,
                     color = company.color,
-                    fontSize = 9.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
                     maxLines = 1,
@@ -185,8 +185,8 @@ fun PriceLabel(row: BoardRow, modifier: Modifier = Modifier) {
                 RowType.BANKRUPT -> Color(0xFFC62828)
                 RowType.PRICE -> Color.Black
             },
-            fontSize = 8.sp,
-            lineHeight = 8.sp,
+            fontSize = 12.sp,
+            lineHeight = 12.sp,
             fontWeight = if (row.label == "100") FontWeight.Bold else FontWeight.Normal,
             textAlign = TextAlign.Center
         )

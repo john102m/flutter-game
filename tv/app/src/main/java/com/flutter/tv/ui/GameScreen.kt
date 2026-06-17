@@ -21,6 +21,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -30,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.flutter.tv.GameStateHolder
 import com.flutter.tv.model.TurnState
+import com.flutter.tv.model.RoundEndData
 import com.flutter.tv.ui.theme.FlutterTvTheme
 import com.google.gson.Gson
 import com.microsoft.signalr.HubConnectionBuilder
@@ -48,10 +50,16 @@ fun GameScreen() {
     var effectCompany by remember { mutableStateOf("") }
     var showCard by remember { mutableStateOf(false) }
     var showDice by remember { mutableStateOf(false) }
+    var diceVisible by remember { mutableStateOf(false) }
     var diceColour by remember { mutableIntStateOf(0) }
     var diceNumber by remember { mutableIntStateOf(1) }
     var pendingState by remember { mutableStateOf<TurnState?>(null) }
     var pendingEffect by remember { mutableStateOf(false) }
+    var overlayCards by remember { mutableStateOf<List<OverlayCard>>(emptyList()) }
+    var showOverlayQueue by remember { mutableStateOf(false) }
+    var pendingOverlayCards by remember { mutableStateOf<List<OverlayCard>?>(null) }
+    var pendingLandedRow by remember { mutableStateOf<Pair<Int, Int>?>(null) } // (companyIndex, row)
+    var diceSettling by remember { mutableStateOf(false) }
 
     // When card shows, wait 2.5s then fade out and apply pending state
     LaunchedEffect(showCard) {
@@ -60,6 +68,44 @@ fun GameScreen() {
             showCard = false
             pendingState?.let { gameStateHolder.update(it) }
             pendingState = null
+            pendingOverlayCards?.let {
+                overlayCards = it
+                showOverlayQueue = true
+                pendingOverlayCards = null
+                diceVisible = false
+            }
+        }
+    }
+
+    // When dice animation finishes: move peg, pause to let player see it, then proceed
+    LaunchedEffect(showDice) {
+        if (!showDice && diceVisible) {
+            diceSettling = true
+            // Move traveller peg
+            pendingLandedRow?.let { (idx, row) ->
+                val currentState = gameStateHolder.state.value
+                val updatedCompanies = currentState.companies.mapIndexed { i, c ->
+                    if (i == idx) c.copy(travellerPegRow = row.toDouble()) else c
+                }
+                gameStateHolder.update(currentState.copy(companies = updatedCompanies))
+                pendingLandedRow = null
+            }
+            // Pause so the peg position is visible before next overlay
+            delay(1200)
+            diceSettling = false
+            if (pendingEffect) {
+                showCard = true
+                pendingEffect = false
+            } else {
+                pendingState?.let { gameStateHolder.update(it) }
+                pendingState = null
+                pendingOverlayCards?.let {
+                    overlayCards = it
+                    showOverlayQueue = true
+                    pendingOverlayCards = null
+                    diceVisible = false
+                }
+            }
         }
     }
 
@@ -67,7 +113,7 @@ fun GameScreen() {
         withContext(Dispatchers.IO) {
             val gson = Gson()
             val connection = HubConnectionBuilder
-                .create("http://10.0.2.2:5000/gamehub")
+                .create("http://192.168.1.177:5000/gamehub")
                 .build()
 
             connection.on("TurnState", { raw: Any ->
@@ -75,23 +121,31 @@ fun GameScreen() {
                 Log.d(TAG, "TurnState raw: $json")
                 val parsed = gson.fromJson(json, TurnState::class.java)
                 Log.d(TAG, "Parsed: player=${parsed.currentPlayer}, companies=${parsed.companies.size}")
-                if (showDice || showCard) {
+                if (showDice || showCard || diceSettling) {
                     pendingState = parsed
                 } else {
                     gameStateHolder.update(parsed)
                 }
             }, Any::class.java)
 
-            connection.on("DiceRolled", { p1: Any, p2: Any, p3: Any, p4: Any, p5: Any ->
+            connection.on("DiceRolled", { p1: Any, p2: Any, p3: Any, p4: Any, p5: Any, p6: Any ->
                 val effectType = p3.toString()
                 val cardText = p4.toString()
                 val company = p5.toString()
-                Log.d(TAG, "DiceRolled: colour=$p1, number=$p2, effect=$effectType, card=$cardText, company=$company")
+                val landedRow = (p6 as? Double)?.toInt() ?: p6.toString().toDoubleOrNull()?.toInt()
+                Log.d(TAG, "DiceRolled: colour=$p1, number=$p2, effect=$effectType, card=$cardText, company=$company, landed=$landedRow")
 
                 // Show dice animation
                 diceColour = (p1 as? Double)?.toInt() ?: p1.toString().toDoubleOrNull()?.toInt() ?: 0
                 diceNumber = (p2 as? Double)?.toInt() ?: p2.toString().toDoubleOrNull()?.toInt() ?: 1
+
+                // Store landed row — apply after dice animation finishes
+                if (landedRow != null) {
+                    pendingLandedRow = Pair(diceColour, landedRow)
+                }
+
                 showDice = true
+                diceVisible = true
 
                 val banner = when (effectType) {
                     "Slump" -> "📉 SLUMP! Dropped back 6"
@@ -108,7 +162,59 @@ fun GameScreen() {
                     effectCompany = ""
                     pendingEffect = false
                 }
-            }, Any::class.java, Any::class.java, Any::class.java, Any::class.java, Any::class.java)
+            }, Any::class.java, Any::class.java, Any::class.java, Any::class.java, Any::class.java, Any::class.java)
+
+            connection.on("TradeExecuted", { name: Any, action: Any, company: Any, price: Any ->
+                val priceInt = (price as? Double)?.toInt() ?: price.toString().toDoubleOrNull()?.toInt() ?: 0
+                val pricePounds = priceInt / 100
+                val verb = if (action.toString() == "buy") "bought" else "sold"
+                Log.d(TAG, "TradeExecuted: $name $verb $company @ £$pricePounds")
+                overlayCards = listOf(OverlayCard(
+                    title = "TRADE",
+                    subtitle = company.toString(),
+                    body = "$name $verb 100 shares @ £$pricePounds",
+                    borderColor = if (action.toString() == "buy") androidx.compose.ui.graphics.Color(0xFF4CAF50) else androidx.compose.ui.graphics.Color(0xFFFF5722),
+                    holdMs = 1500
+                ))
+                showOverlayQueue = true
+            }, Any::class.java, Any::class.java, Any::class.java, Any::class.java)
+
+            connection.on("RoundEnd", { raw: Any ->
+                val json = gson.toJson(raw)
+                Log.d(TAG, "RoundEnd: $json")
+                val companyNames = listOf("Aramco", "Exxon", "Shell", "Chevron", "Esso", "BP")
+                val result = gson.fromJson(json, RoundEndData::class.java)
+                val cards = mutableListOf<OverlayCard>()
+                cards.add(OverlayCard(title = "ROUND END", body = "Assessing all companies...", holdMs = 2000))
+                result.companies.forEach { c ->
+                    val idx = c.companyIndex.toInt()
+                    val div = c.dividendPercent.toInt()
+                    val move = c.parentMove.toInt()
+                    val arrow = when { move > 0 -> "↑$move"; move < 0 -> "↓${-move}"; else -> "—" }
+                    val divText = if (div > 0) "$div% dividend" else "No dividend"
+                    cards.add(OverlayCard(
+                        title = companyNames[idx],
+                        body = "$divText  •  Share price $arrow",
+                        borderColor = companyDefs[idx].color,
+                        holdMs = 2000
+                    ))
+                }
+                if (result.winner != null) {
+                    cards.add(OverlayCard(
+                        title = "🏆 WINNER!",
+                        body = "${result.winner} with £${result.winnerCapital.toInt() / 100}",
+                        borderColor = androidx.compose.ui.graphics.Color(0xFFffd700),
+                        holdMs = 5000
+                    ))
+                }
+                overlayCards = cards
+                if (showDice || showCard) {
+                    pendingOverlayCards = cards
+                } else {
+                    showOverlayQueue = true
+                    diceVisible = false
+                }
+            }, Any::class.java)
 
             try {
                 connection.start().blockingAwait()
@@ -128,6 +234,7 @@ fun GameScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .scale(0.98f)
             .background(Color(0xFF1a1a2e))
     ) {
         Row(modifier = Modifier.fillMaxSize()) {
@@ -156,7 +263,7 @@ fun GameScreen() {
         // Anti-slump badges — bottom left
         val antiSlumpCompanies = state.companies.filter { it.hasAntiSlump }
         if (antiSlumpCompanies.isNotEmpty()) {
-            val companyNames = listOf("Saudi Aramco", "ExxonMobil", "Shell", "Chevron", "TotalEnergies", "BP")
+            val companyNames = listOf("Aramco", "Exxon", "Shell", "Chevron", "Esso", "BP")
             Box(
                 modifier = Modifier.fillMaxSize().padding(12.dp),
                 contentAlignment = Alignment.BottomStart
@@ -185,15 +292,15 @@ fun GameScreen() {
                     numberResult = diceNumber,
                     onFinished = {
                         showDice = false
-                        if (pendingEffect) {
-                            showCard = true
-                            pendingEffect = false
-                        } else {
-                            pendingState?.let { gameStateHolder.update(it) }
-                            pendingState = null
-                        }
                     }
                 )
+            }
+        } else if (diceVisible) {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(end = 80.dp, top = 200.dp),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                DiceResult(colourResult = diceColour, numberResult = diceNumber)
             }
         }
 
@@ -241,6 +348,19 @@ fun GameScreen() {
                     }
                 }
             }
+        }
+
+        // Trade / Round End overlay card queue
+        if (showOverlayQueue) {
+            OverlayCardQueue(
+                cards = overlayCards,
+                onAllDone = {
+                    showOverlayQueue = false
+                    overlayCards = emptyList()
+                    pendingState?.let { gameStateHolder.update(it) }
+                    pendingState = null
+                }
+            )
         }
     }
 }
