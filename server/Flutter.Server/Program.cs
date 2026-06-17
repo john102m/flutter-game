@@ -1,5 +1,6 @@
 using Flutter.Server.Hubs;
 using Flutter.Server.Services;
+using Microsoft.AspNetCore.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,5 +22,10 @@ var app = builder.Build();
 app.UseCors();
 app.MapHub<GameHub>("/gamehub");
 app.MapGet("/", () => "Flutter Server running");
+app.MapGet("/admin/reset", (GameService gs, IHubContext<GameHub> hub) => {
+    gs.ResetGame();
+    hub.Clients.All.SendAsync("GameReset");
+    return "Game reset";
+});
 
 app.Run();
