@@ -4,7 +4,19 @@ namespace Flutter.Server.Services;
 
 public class GameService
 {
-    private const int Brokerage = 500; // £5 in pence
+    // Board layout
+    private const int TopRow = 2;
+    private const int BottomRow = 32;
+    private const int HighestPriceRow = 12;
+    private const int MarketNewsRow = 11;
+    private const int SlumpDrop = 6;
+    private const int CompanyCount = 6;
+
+    // Money (in pence)
+    private const int Brokerage = 500;
+    private const int ParPrice = 10000; // £100 PAR value
+    private const int WinThreshold = 60000; // £600
+
     private GameState? _game;
     private readonly MarketNewsDeck _deck = new();
 
@@ -35,6 +47,15 @@ public class GameService
         return player;
     }
 
+    public bool Rejoin(string name, string connectionId)
+    {
+        if (_game is null) return false;
+        var player = _game.Players.FirstOrDefault(p => p.Name == name);
+        if (player is null) return false;
+        player.ConnectionId = connectionId;
+        return true;
+    }
+
     public bool StartGame(string connectionId)
     {
         if (_game is null || _game.Phase != GamePhase.Lobby)
@@ -55,7 +76,7 @@ public class GameService
     public string? BuyShares(string connectionId, int company)
     {
         if (!IsCurrentPlayer(connectionId)) return "Not your turn";
-        if (company < 0 || company > 5) return "Invalid company";
+        if (company < 0 || company >= CompanyCount) return "Invalid company";
 
         var player = _game!.CurrentPlayer;
         var price = GameState.PriceForRow(_game.Companies[company].ParentPegRow);
@@ -72,7 +93,7 @@ public class GameService
     public string? SellShares(string connectionId, int company)
     {
         if (!IsCurrentPlayer(connectionId)) return "Not your turn";
-        if (company < 0 || company > 5) return "Invalid company";
+        if (company < 0 || company >= CompanyCount) return "Invalid company";
 
         var player = _game!.CurrentPlayer;
         if (player.Holdings[company] <= 0) return "No shares to sell";
@@ -87,15 +108,17 @@ public class GameService
     {
         if (!IsCurrentPlayer(connectionId)) return null!;
 
-        var colourDie = 0; // DEBUG: always Saudi Aramco
+        var colourDie = Random.Shared.Next(0, CompanyCount);
 
         // Move traveller up (lower row number = higher on board)
         var company = _game!.Companies[colourDie];
 
-        // DEBUG: always roll 1 to hit every row sequentially
-        var numberDie = 1;
+        var numberDie = Random.Shared.Next(1, 7);
 
-        company.TravellerPegRow = Math.Max(2, company.TravellerPegRow - numberDie);
+        company.TravellerPegRow = Math.Max(TopRow, company.TravellerPegRow - numberDie);
+
+        // Capture where the traveller landed before effects modify it
+        var landedRow = company.TravellerPegRow;
 
         // Check board effects
         BoardEffect? effect = null;
@@ -111,12 +134,12 @@ public class GameService
             else
             {
                 var before = company.TravellerPegRow;
-                company.TravellerPegRow = Math.Min(company.TravellerPegRow + 6, company.ParentPegRow);
+                company.TravellerPegRow = Math.Min(company.TravellerPegRow + SlumpDrop, company.ParentPegRow);
                 effect = new BoardEffect("Slump");
                 Console.WriteLine($"[SLUMP] Company {colourDie} dropped from row {before} to {company.TravellerPegRow}");
             }
         }
-        else if (company.TravellerPegRow == 11)
+        else if (company.TravellerPegRow == MarketNewsRow)
         {
             var card = _deck.Draw();
             effect = new BoardEffect("MarketNews", card.Text, card.Id);
@@ -124,10 +147,92 @@ public class GameService
             ApplyCard(card, company);
         }
 
+        // Check if round ends (any traveller hit top row)
+        if (_game.Companies.Any(c => c.TravellerPegRow == TopRow))
+        {
+            var roundResult = ProcessRoundEnd();
+            // Advance turn AFTER round end
+            _game.CurrentPlayerIndex = (_game.CurrentPlayerIndex + 1) % _game.Players.Count;
+            return new DiceResult(colourDie, numberDie, effect, roundResult, landedRow);
+        }
+
         // Advance to next player
         _game.CurrentPlayerIndex = (_game.CurrentPlayerIndex + 1) % _game.Players.Count;
 
-        return new DiceResult(colourDie, numberDie, effect);
+        return new DiceResult(colourDie, numberDie, effect, null, landedRow);
+    }
+
+    private RoundEndResult ProcessRoundEnd()
+    {
+        var companyResults = new CompanyRoundResult[CompanyCount];
+
+        for (int i = 0; i < CompanyCount; i++)
+        {
+            var company = _game!.Companies[i];
+            var (dividendPercent, parentMove) = AssessCompany(company);
+
+            // Pay dividends
+            if (dividendPercent > 0)
+                PayDividend(i, dividendPercent);
+
+            // Move parent peg
+            var oldParent = company.ParentPegRow;
+            company.ParentPegRow = Math.Clamp(company.ParentPegRow - parentMove, HighestPriceRow, BottomRow);
+
+            companyResults[i] = new CompanyRoundResult(i, dividendPercent, parentMove, oldParent, company.ParentPegRow);
+        }
+
+        // Reset travellers to parent pegs
+        foreach (var company in _game!.Companies)
+            company.TravellerPegRow = company.ParentPegRow;
+
+        // Reshuffle market news deck
+        _deck.Shuffle();
+
+        // Win condition check
+        string? winner = null;
+        int winnerCapital = 0;
+        foreach (var player in _game.Players)
+        {
+            var capital = TotalCapital(player);
+            if (capital >= WinThreshold && capital > winnerCapital)
+            {
+                winner = player.Name;
+                winnerCapital = capital;
+            }
+        }
+
+        if (winner != null)
+            _game.Phase = GamePhase.GameOver;
+
+        return new RoundEndResult(companyResults, winner, winnerCapital);
+    }
+
+    private (int dividendPercent, int parentMove) AssessCompany(Company company)
+    {
+        var row = company.TravellerPegRow;
+
+        // Still on parent peg (never moved)
+        if (row == company.ParentPegRow)
+            return (0, -2);
+
+        return row switch
+        {
+            TopRow => (20, 2),              // Top — 20%
+            4 or 5 or 7 => (10, 1),        // 10% rows
+            8 or 9 or 10 => (5, 1),        // 5% rows
+            3 or 6 => (10, 1),             // SLUMP row (got here with anti-slump)
+            MarketNewsRow => (0, 0),        // Market News — no move
+            _ => (0, -1),                   // Below Market News — parent drops
+        };
+    }
+
+    private int TotalCapital(Player player)
+    {
+        var shareValue = 0;
+        for (int i = 0; i < CompanyCount; i++)
+            shareValue += player.Holdings[i] * GameState.PriceForRow(_game!.Companies[i].ParentPegRow);
+        return player.Cash + shareValue;
     }
 
     private void ApplyCard(MarketNewsCard card, Company company)
@@ -135,7 +240,7 @@ public class GameService
         switch (card.Effect)
         {
             case CardEffect.TravellerAdvance:
-                company.TravellerPegRow = Math.Max(2, company.TravellerPegRow - card.Value);
+                company.TravellerPegRow = Math.Max(TopRow, company.TravellerPegRow - card.Value);
                 break;
             case CardEffect.TravellerDown:
                 company.TravellerPegRow = Math.Min(company.TravellerPegRow + card.Value, company.ParentPegRow);
@@ -144,10 +249,10 @@ public class GameService
                 company.TravellerPegRow = company.ParentPegRow;
                 break;
             case CardEffect.ParentPegUp:
-                company.ParentPegRow = Math.Max(12, company.ParentPegRow - card.Value);
+                company.ParentPegRow = Math.Max(HighestPriceRow, company.ParentPegRow - card.Value);
                 break;
             case CardEffect.ParentPegDown:
-                company.ParentPegRow = Math.Min(32, company.ParentPegRow + card.Value);
+                company.ParentPegRow = Math.Min(BottomRow, company.ParentPegRow + card.Value);
                 break;
             case CardEffect.Dividend:
                 PayDividend(company.Index, card.Value);
@@ -165,9 +270,8 @@ public class GameService
             var certs = player.Holdings[companyIndex];
             if (certs > 0)
             {
-                // percent per 100 shares (1 cert = 100 shares), price is in pence
-                var price = GameState.PriceForRow(_game.Companies[companyIndex].ParentPegRow);
-                player.Cash += certs * price * percent / 100;
+                // Dividends paid on £100 PAR value per certificate, not market price
+                player.Cash += certs * ParPrice * percent / 100;
             }
         }
     }

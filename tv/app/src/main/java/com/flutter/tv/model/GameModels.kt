@@ -31,3 +31,17 @@ data class DiceResult(
     val colourDie: Int,
     val numberDie: Int
 )
+
+data class CompanyRoundResult(
+    val companyIndex: Double = 0.0,
+    val dividendPercent: Double = 0.0,
+    val parentMove: Double = 0.0,
+    val oldParentRow: Double = 0.0,
+    val newParentRow: Double = 0.0
+)
+
+data class RoundEndData(
+    val companies: List<CompanyRoundResult> = emptyList(),
+    val winner: String? = null,
+    val winnerCapital: Double = 0.0
+)
