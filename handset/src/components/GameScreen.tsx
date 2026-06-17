@@ -23,12 +23,14 @@ interface CompanyState {
   parentPegRow: number;
   travellerPegRow: number;
   price: number;
+  isBankrupt?: boolean;
 }
 
 interface PlayerState {
   name: string;
   cash: number;
   holdings: number[];
+  avatar?: number;
 }
 
 interface TurnState {
@@ -47,6 +49,8 @@ interface CompanyRoundResult {
   companyIndex: number;
   dividendPercent: number;
   parentMove: number;
+  bonusShares?: boolean;
+  bankrupt?: boolean;
 }
 
 interface RoundEndResult {
@@ -88,6 +92,12 @@ function DividendModal({ result, holdings, onDismiss }: { result: RoundEndResult
         {result.winner && (
           <div className="text-center text-yellow-300 font-bold mb-3">🏆 {result.winner} wins with £{Math.floor(result.winnerCapital / 100)}!</div>
         )}
+        {result.companies.filter(c => c.bonusShares && holdings[c.companyIndex] > 0).map(c => (
+          <div key={c.companyIndex} className="text-center text-pink-300 font-bold mb-2">🎉 {COMPANIES[c.companyIndex]} bonus shares! You now hold {holdings[c.companyIndex] * 2}</div>
+        ))}
+        {result.companies.filter(c => c.bankrupt).map(c => (
+          <div key={c.companyIndex} className="text-center text-red-400 font-bold mb-2">💀 {COMPANIES[c.companyIndex]} is bankrupt!</div>
+        ))}
         <div className="text-center">
           <button onClick={onDismiss} className="bg-white text-gray-900 font-bold px-6 py-2 rounded-lg">OK</button>
         </div>
@@ -99,9 +109,10 @@ function DividendModal({ result, holdings, onDismiss }: { result: RoundEndResult
 interface Props {
   connection: HubConnection;
   playerName: string;
+  isHost: boolean;
 }
 
-export function GameScreen({ connection, playerName }: Props) {
+export function GameScreen({ connection, playerName, isHost }: Props) {
   const [turnState, setTurnState] = useState<TurnState | null>(null);
   const [lastRoll, setLastRoll] = useState<{ colour: number; number: number; effect?: string } | null>(null);
   const [error, setError] = useState("");
@@ -109,6 +120,7 @@ export function GameScreen({ connection, playerName }: Props) {
   const [effectModal, setEffectModal] = useState<{ effect: BoardEffect; company: string } | null>(null);
   const [roundEnd, setRoundEnd] = useState<{ result: RoundEndResult; holdings: number[] } | null>(null);
   const holdingsRef = useRef<number[]>([0,0,0,0,0,0]);
+  const [showRestart, setShowRestart] = useState(false);
 
   useEffect(() => {
     connection.on("TurnState", (state: TurnState) => {
@@ -124,7 +136,10 @@ export function GameScreen({ connection, playerName }: Props) {
       }
       setTimeout(() => setAnimating(false), effectType ? 5000 : 3000);
     });
-    connection.on("Error", (msg: string) => setError(msg));
+    connection.on("Error", (msg: string) => {
+      setError(msg);
+      navigator.vibrate?.(200);
+    });
     connection.on("RoundEnd", (result: RoundEndResult) => {
       setTimeout(() => setRoundEnd({ result, holdings: [...holdingsRef.current] }), 5000);
     });
@@ -149,9 +164,44 @@ export function GameScreen({ connection, playerName }: Props) {
   return (
     <div className="h-screen bg-gray-900 text-white p-2.5 pb-16 flex flex-col gap-1.5 overflow-hidden">
       {/* Turn indicator */}
-      <div className={`text-center py-1 rounded font-bold text-lg ${isMyTurn ? "bg-green-700" : "bg-gray-700"}`}>
+      <div className={`text-center py-1 rounded font-bold text-lg flex items-center justify-center gap-2 relative ${isMyTurn ? "bg-green-700" : "bg-gray-700"}`}>
+        <img src={`/avatars/avatar_${me?.avatar ?? 0}.png`} className="w-7 h-7 rounded-full" />
         {isMyTurn ? `Your Turn,  ${me?.name}` : `Waiting for ${turnState.currentPlayer}`}
+        {isHost && (
+          <button
+            onClick={() => setShowRestart(true)}
+            className="absolute right-2 text-xs text-gray-400 bg-gray-800 px-2 py-0.5 rounded"
+          >
+            ↺
+          </button>
+        )}
       </div>
+
+      {showRestart && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="rounded-xl p-5 max-w-sm w-full bg-gray-800 border-2 border-red-500 text-center space-y-3">
+            <div className="text-lg font-bold text-red-400">Restart Game?</div>
+            <button
+              onClick={() => { setShowRestart(false); connection.invoke("RestartGame"); }}
+              className="w-full bg-amber-600 py-2 rounded-lg font-bold"
+            >
+              Rematch (same players)
+            </button>
+            <button
+              onClick={() => { setShowRestart(false); connection.invoke("NewGame"); }}
+              className="w-full bg-red-600 py-2 rounded-lg font-bold"
+            >
+              Full Reset (everyone rejoins)
+            </button>
+            <button
+              onClick={() => setShowRestart(false)}
+              className="w-full bg-gray-600 py-2 rounded-lg text-sm"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
@@ -197,6 +247,13 @@ export function GameScreen({ connection, playerName }: Props) {
           const held = me?.holdings[c.index] ?? 0;
           const price = c.price / 100;
           const cost = price + 5;
+          if (c.isBankrupt) {
+            return (
+              <div key={c.index} className="rounded px-2.5 py-1.5 bg-gray-800 opacity-40">
+                <div className="font-bold text-gray-500">{COMPANIES[c.index]} <span className="text-xs">💀 BANKRUPT</span></div>
+              </div>
+            );
+          }
           return (
             <div key={c.index} className="rounded px-2.5 py-1.5 flex items-center justify-between" style={{ backgroundColor: `${COMPANY_COLOURS[c.index]}30` }}>
               <div>
@@ -233,6 +290,24 @@ export function GameScreen({ connection, playerName }: Props) {
           🎲 Roll Dice
         </button>
       )}
+
+      {/* Debug */}
+      {/* {import.meta.env.DEV && (
+        <div className="absolute top-1 right-1 flex gap-1">
+          <button
+            onClick={() => connection.invoke("DebugBankruptcy", 0)}
+            className="text-xs text-gray-500 bg-gray-800 px-2 py-0.5 rounded"
+          >
+            DBG:Bankrupt
+          </button>
+          <button
+            onClick={() => connection.invoke("DebugGameOver")}
+            className="text-xs text-gray-500 bg-gray-800 px-2 py-0.5 rounded"
+          >
+            DBG:GameOver
+          </button>
+        </div>
+      )} */}
     </div>
   );
 }

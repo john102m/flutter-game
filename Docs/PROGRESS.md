@@ -1,5 +1,15 @@
 # Flutter — Progress Log
 
+## 2026-06-17 Session (Evening) — Sounds & Polish
+
+### In Progress
+
+- **Sound effects on TV** — SoundPool with short .ogg clips: dice rattle, card flip, slump crash, dividend cha-ching, round end fanfare, victory
+- **Further round-end testing** — verifying animation sequencing, peg visibility, handset modal timing
+- **General polish** — any UX issues found during playtesting
+
+---
+
 ## 2026-06-17 Session
 
 ### Completed
@@ -74,12 +84,15 @@
 
 ### What's Next
 
-1. **Game Over screen** — display winner on TV and handsets when GamePhase.GameOver
-2. **Bonus shares** — parent peg hits £200 → 1-for-1 bonus, parent returns to PAR
-3. **Bankruptcy** — parent peg hits bottom → company removed from game
-5. **Polish** — TV board visual improvements, handset turn notifications
-6. **Avatars** — selectable from a small set on connect screen, stored in player model, shown on TV player panel and handset
-7. **Sound effects** — SoundPool on TV: dice rattle, card flip, slump crash, dividend cha-ching, round end fanfare, victory
+1. ~~**Game Over screen**~~ ✓
+2. ~~**Bonus shares**~~ ✓
+3. ~~**Bankruptcy**~~ ✓
+4. ~~**Avatars**~~ ✓
+5. ~~**Sound effects**~~ ✓
+6. **Lottie confetti on victory**
+7. **Canvas-based particle sparkles on dividends**
+8. **Spring animations on peg movement**
+9. **Gradient/glow effects on the active player**
 
 ---
 

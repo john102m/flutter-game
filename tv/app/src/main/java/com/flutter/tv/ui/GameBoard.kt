@@ -1,11 +1,13 @@
 package com.flutter.tv.ui
 
 import androidx.compose.animation.core.animateIntAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -68,22 +70,29 @@ val boardRows = listOf(
 )
 
 @Composable
-fun GameBoard(animatedTravellers: List<Int>, animatedParents: List<Int>, modifier: Modifier = Modifier) {
+fun GameBoard(animatedTravellers: List<Int>, animatedParents: List<Int>, bankrupt: List<Boolean> = List(6) { false }, modifier: Modifier = Modifier) {
     val travellers = animatedTravellers.map { target ->
-        val anim by animateIntAsState(targetValue = target, animationSpec = tween(600))
+        val anim by animateIntAsState(targetValue = target, animationSpec = spring(dampingRatio = 0.6f, stiffness = 120f))
         anim
     }
     val parents = animatedParents.map { target ->
-        val anim by animateIntAsState(targetValue = target, animationSpec = tween(600))
+        val anim by animateIntAsState(targetValue = target, animationSpec = spring(dampingRatio = 0.8f, stiffness = 80f))
         anim
     }
 
-    Column(
+    val shape = RoundedCornerShape(12.dp)
+    Surface(
         modifier = modifier
             .fillMaxHeight()
             .padding(8.dp)
-            .border(1.dp, Color.Black)
-            .background(Color(0xFFE0E0E0))
+            .border(2.dp, Color(0xFF4A4A4A), shape),
+        shape = shape,
+        shadowElevation = 12.dp,
+        color = Color(0xFFE0E0E0)
+    ) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
             .padding(8.dp)
     ) {
         Text(
@@ -100,12 +109,14 @@ fun GameBoard(animatedTravellers: List<Int>, animatedParents: List<Int>, modifie
             companyDefs.forEach { company ->
                 Text(
                     text = company.name,
-                    color = company.color,
+                    color = Color.White,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
                     maxLines = 1,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f).background(
+                        Color(company.color.red * 0.7f, company.color.green * 0.7f, company.color.blue * 0.7f)
+                    )
                 )
             }
             Spacer(modifier = Modifier.weight(1f))
@@ -121,15 +132,17 @@ fun GameBoard(animatedTravellers: List<Int>, animatedParents: List<Int>, modifie
                 companyDefs.forEachIndexed { companyIndex, companyDef ->
                     val hasParent = parents[companyIndex] == boardRow.row
                     val hasTraveller = travellers[companyIndex] == boardRow.row
+                    val isBankrupt = bankrupt[companyIndex]
+                    val colColor = if (isBankrupt) Color(0xFF444444) else companyDef.color
 
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
-                            .background(companyDef.color.copy(alpha = 0.7f)),
+                            .background(colColor.copy(alpha = if (isBankrupt) 0.3f else 0.7f)),
                         contentAlignment = Alignment.Center
                     ) {
-                        when {
+                        if (!isBankrupt) when {
                             hasParent && hasTraveller -> {
                                 Box(
                                     modifier = Modifier
@@ -169,6 +182,7 @@ fun GameBoard(animatedTravellers: List<Int>, animatedParents: List<Int>, modifie
             }
         }
     }
+    }
 }
 
 @Composable
@@ -187,7 +201,7 @@ fun PriceLabel(row: BoardRow, modifier: Modifier = Modifier) {
             },
             fontSize = 12.sp,
             lineHeight = 12.sp,
-            fontWeight = if (row.label == "100") FontWeight.Bold else FontWeight.Normal,
+            fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
     }

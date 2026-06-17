@@ -12,7 +12,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        Log.d("FlutterTV", "MainActivity.onCreate BUILD 2")
+        SoundManager.init(this)
+        Log.d("FlutterTV", "MainActivity.onCreate BUILD 3")
         setContent {
             FlutterTvTheme {
                 GameScreen()

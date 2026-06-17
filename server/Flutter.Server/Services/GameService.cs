@@ -20,7 +20,7 @@ public class GameService
     private GameState? _game;
     private readonly MarketNewsDeck _deck = new();
 
-    public GameState CreateGame(string hostConnectionId, string hostName)
+    public GameState CreateGame(string hostConnectionId, string hostName, int avatar)
     {
         _game = new GameState
         {
@@ -30,19 +30,20 @@ public class GameService
         {
             ConnectionId = hostConnectionId,
             Name = hostName,
-            IsHost = true
+            IsHost = true,
+            Avatar = avatar
         });
         return _game;
     }
 
     public GameState? GetGame() => _game;
 
-    public Player? JoinGame(string code, string connectionId, string name)
+    public Player? JoinGame(string code, string connectionId, string name, int avatar)
     {
         if (_game is null || _game.GameCode != code || _game.Phase != GamePhase.Lobby)
             return null;
 
-        var player = new Player { ConnectionId = connectionId, Name = name };
+        var player = new Player { ConnectionId = connectionId, Name = name, Avatar = avatar };
         _game.Players.Add(player);
         return player;
     }
@@ -169,6 +170,14 @@ public class GameService
         for (int i = 0; i < CompanyCount; i++)
         {
             var company = _game!.Companies[i];
+
+            // Skip bankrupt companies
+            if (company.IsBankrupt)
+            {
+                companyResults[i] = new CompanyRoundResult(i, 0, 0, company.ParentPegRow, company.ParentPegRow);
+                continue;
+            }
+
             var (dividendPercent, parentMove) = AssessCompany(company);
 
             // Pay dividends
@@ -179,7 +188,27 @@ public class GameService
             var oldParent = company.ParentPegRow;
             company.ParentPegRow = Math.Clamp(company.ParentPegRow - parentMove, HighestPriceRow, BottomRow);
 
-            companyResults[i] = new CompanyRoundResult(i, dividendPercent, parentMove, oldParent, company.ParentPegRow);
+            // Bonus shares: parent hits £200 → 1-for-1 bonus, parent returns to PAR
+            var bonusIssued = false;
+            if (company.ParentPegRow == HighestPriceRow)
+            {
+                foreach (var player in _game!.Players)
+                    player.Holdings[i] *= 2;
+                company.ParentPegRow = 22; // PAR
+                bonusIssued = true;
+            }
+
+            // Bankruptcy: parent hits bottom → company removed
+            var bankrupt = false;
+            if (company.ParentPegRow >= BottomRow)
+            {
+                company.IsBankrupt = true;
+                bankrupt = true;
+                foreach (var player in _game!.Players)
+                    player.Holdings[i] = 0;
+            }
+
+            companyResults[i] = new CompanyRoundResult(i, dividendPercent, parentMove, oldParent, company.ParentPegRow, bonusIssued, bankrupt);
         }
 
         // Reset travellers to parent pegs
@@ -274,5 +303,49 @@ public class GameService
                 player.Cash += certs * ParPrice * percent / 100;
             }
         }
+    }
+
+    public int DebugForceGameOver()
+    {
+        if (_game is null) return 0;
+        _game.Phase = GamePhase.GameOver;
+        var player = _game.Players[0];
+        player.Cash = WinThreshold; // guarantee they look like a winner
+        return TotalCapital(player);
+    }
+
+    public void DebugForceBankruptcy(int company)
+    {
+        if (_game is null || company < 0 || company >= CompanyCount) return;
+        var c = _game.Companies[company];
+        c.IsBankrupt = true;
+        c.ParentPegRow = BottomRow;
+        c.TravellerPegRow = BottomRow;
+        foreach (var player in _game.Players)
+            player.Holdings[company] = 0;
+    }
+
+    public void ResetGame()
+    {
+        if (_game is null) return;
+        _game.Phase = GamePhase.Lobby;
+        _game.CurrentPlayerIndex = 0;
+        _game.Companies = Enumerable.Range(0, CompanyCount).Select(i => new Company { Index = i }).ToList();
+        _game.Players.Clear();
+        _deck.Shuffle();
+    }
+
+    public void RematchGame()
+    {
+        if (_game is null) return;
+        _game.Phase = GamePhase.Lobby;
+        _game.CurrentPlayerIndex = 0;
+        _game.Companies = Enumerable.Range(0, CompanyCount).Select(i => new Company { Index = i }).ToList();
+        foreach (var player in _game.Players)
+        {
+            player.Cash = 30000;
+            player.Holdings = new int[CompanyCount];
+        }
+        _deck.Shuffle();
     }
 }

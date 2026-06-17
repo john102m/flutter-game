@@ -51,6 +51,7 @@ fun OverlayCardQueue(
 
     if (cards.isNotEmpty() && currentIndex < cards.size) {
         val card = cards[currentIndex]
+        val isDividend = card.body.contains("dividend", ignoreCase = true) && card.body.contains("%")
         AnimatedVisibility(
             visible = visible,
             enter = fadeIn(),
@@ -60,6 +61,9 @@ fun OverlayCardQueue(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
+                if (isDividend) {
+                    ParticleSparkle(modifier = Modifier.fillMaxSize())
+                }
                 Box(
                     modifier = Modifier
                         .width(400.dp)
