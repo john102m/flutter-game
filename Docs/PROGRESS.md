@@ -1,5 +1,28 @@
 # Flutter — Progress Log
 
+## 2026-06-17 Session (Late Evening) — Polish & UX Sync
+
+### Completed
+
+- **Host-only restart button** — ↺ in turn indicator, modal with "Rematch (same players)" or "Full Reset (everyone rejoins)", both host-checked on server
+- **Admin reset endpoint** — `GET /admin/reset` broadcasts GameReset to all clients, LAN safety net
+- **Board elevated** — Surface with 12dp rounded corners, 2dp border, 12dp shadow
+- **Overlay cards beefed up** — 500dp wide, 22/24sp bold fonts, 16dp shadow, 3dp border
+- **Particle sparkles on dividends** — Canvas-based gold/amber particles behind dividend overlay cards
+- **Lottie confetti on victory** — fullscreen confetti loop behind game over text (lottie-compose 6.4.0)
+- **Pulsing glow on active player** — green shadow 4dp↔16dp, 1s cycle on PlayerPanel
+- **Phone vibration on error** — 200ms buzz via Vibration API
+- **Removed handset effect modals** — no more slump/market news popups, TV is the announcement
+- **Ticker synced to dice** — 3s delay before showing result, matches TV landing
+- **Round end locks controls** — handset disabled until dividend modal dismissed, delay scaled to card count
+- **Layout fixes** — dvh viewport, pt-5 status bar clearance, mt-auto roll button, pb-8 bottom
+
+### Known Issues
+
+- Lottie confetti JSON is minimal (8 particles) — swap with a proper LottieFiles animation for more impact
+
+---
+
 ## 2026-06-17 Session (Evening) — Sounds & Polish
 
 ### In Progress
@@ -89,10 +112,13 @@
 3. ~~**Bankruptcy**~~ ✓
 4. ~~**Avatars**~~ ✓
 5. ~~**Sound effects**~~ ✓
-6. **Lottie confetti on victory**
-7. **Canvas-based particle sparkles on dividends**
-8. **Spring animations on peg movement**
-9. **Gradient/glow effects on the active player**
+6. ~~**Lottie confetti on victory**~~ ✓
+7. ~~**Canvas-based particle sparkles on dividends**~~ ✓
+8. ~~**Spring animations on peg movement**~~ reverted — too much
+9. ~~**Gradient/glow effects on the active player**~~ ✓
+10. **Serve handset from .NET server** — `npm run build` → static files middleware, single process for game night
+11. **Better Lottie confetti** — replace minimal hand-crafted JSON with a proper LottieFiles animation
+12. **Share supply limit** — enforce 10 certificates per company
 
 ---
 
