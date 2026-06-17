@@ -66,35 +66,36 @@ fun OverlayCardQueue(
                 }
                 Box(
                     modifier = Modifier
-                        .width(400.dp)
-                        .shadow(8.dp, RoundedCornerShape(16.dp))
-                        .clip(RoundedCornerShape(16.dp))
+                        .width(500.dp)
+                        .shadow(16.dp, RoundedCornerShape(20.dp))
+                        .clip(RoundedCornerShape(20.dp))
                         .background(Color(0xFFF5F0E8))
-                        .border(2.dp, card.borderColor, RoundedCornerShape(16.dp))
-                        .padding(20.dp),
+                        .border(3.dp, card.borderColor, RoundedCornerShape(20.dp))
+                        .padding(28.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             text = card.title,
                             color = card.borderColor,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.ExtraBold
                         )
                         if (card.subtitle.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(6.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = card.subtitle,
                                 color = Color.DarkGray,
-                                fontSize = 16.sp,
+                                fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
                         Text(
                             text = card.body,
                             color = Color.Black,
-                            fontSize = 18.sp,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center
                         )
                     }

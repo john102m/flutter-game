@@ -4,20 +4,6 @@ import { useEffect, useRef, useState } from "react";
 const COMPANIES = ["Aramco", "Exxon", "Shell", "Chevron", "Esso", "BP"];
 const COMPANY_COLOURS = ["#1565C0", "#E53935", "#43A047", "#1E88E5", "#FFD600", "#FF8C00"];
 
-function EffectModal({ effect, company, onDismiss }: { effect: BoardEffect; company: string; onDismiss: () => void }) {
-  const isSlump = effect.type === "Slump";
-  return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className={`rounded-xl p-5 max-w-sm w-full text-center ${isSlump ? "bg-red-900 border-2 border-red-500" : "bg-gray-800 border-2 border-yellow-500"}`}>
-        <div className="text-2xl mb-2">{isSlump ? "📉" : "📰"}</div>
-        <div className="text-lg font-bold mb-1 text-white">{company}</div>
-        <div className="text-white mb-4">{isSlump ? "SLUMP! Dropped back 6 spaces" : effect.cardText}</div>
-        <button onClick={onDismiss} className="bg-white text-gray-900 font-bold px-6 py-2 rounded-lg">OK</button>
-      </div>
-    </div>
-  );
-}
-
 interface CompanyState {
   index: number;
   parentPegRow: number;
@@ -39,11 +25,6 @@ interface TurnState {
   companies: CompanyState[];
 }
 
-interface BoardEffect {
-  type: string;
-  cardText?: string;
-  cardId?: number;
-}
 
 interface CompanyRoundResult {
   companyIndex: number;
@@ -114,10 +95,9 @@ interface Props {
 
 export function GameScreen({ connection, playerName, isHost }: Props) {
   const [turnState, setTurnState] = useState<TurnState | null>(null);
-  const [lastRoll, setLastRoll] = useState<{ colour: number; number: number; effect?: string } | null>(null);
+  const [lastRoll, setLastRoll] = useState<{ colour: number; number: number; effect?: string; cardText?: string } | null>(null);
   const [error, setError] = useState("");
   const [animating, setAnimating] = useState(false);
-  const [effectModal, setEffectModal] = useState<{ effect: BoardEffect; company: string } | null>(null);
   const [roundEnd, setRoundEnd] = useState<{ result: RoundEndResult; holdings: number[] } | null>(null);
   const holdingsRef = useRef<number[]>([0,0,0,0,0,0]);
   const [showRestart, setShowRestart] = useState(false);
@@ -128,12 +108,9 @@ export function GameScreen({ connection, playerName, isHost }: Props) {
       const me = state.players.find(p => p.name === playerName);
       if (me) holdingsRef.current = me.holdings;
     });
-    connection.on("DiceRolled", (colour: number, num: number, effectType: string, cardText: string, companyName: string) => {
-      setLastRoll({ colour, number: num, effect: effectType || undefined });
+    connection.on("DiceRolled", (colour: number, num: number, effectType: string, cardText: string, _companyName: string) => {
       setAnimating(true);
-      if (effectType === "Slump" || effectType === "MarketNews") {
-        setEffectModal({ effect: { type: effectType, cardText: cardText || undefined }, company: companyName || COMPANIES[colour] });
-      }
+      setTimeout(() => setLastRoll({ colour, number: num, effect: effectType || undefined, cardText: cardText || undefined }), 3000);
       setTimeout(() => setAnimating(false), effectType ? 5000 : 3000);
     });
     connection.on("Error", (msg: string) => {
@@ -141,7 +118,9 @@ export function GameScreen({ connection, playerName, isHost }: Props) {
       navigator.vibrate?.(200);
     });
     connection.on("RoundEnd", (result: RoundEndResult) => {
-      setTimeout(() => setRoundEnd({ result, holdings: [...holdingsRef.current] }), 5000);
+      setAnimating(true);
+      const cardCount = result.companies.length + 1 + (result.winner ? 1 : 0);
+      setTimeout(() => setRoundEnd({ result, holdings: [...holdingsRef.current] }), cardCount * 2400);
     });
 
     connection.invoke("GetState");
@@ -162,7 +141,7 @@ export function GameScreen({ connection, playerName, isHost }: Props) {
   const me = turnState.players.find(p => p.name === playerName);
 
   return (
-    <div className="h-screen bg-gray-900 text-white p-2.5 pb-16 flex flex-col gap-1.5 overflow-hidden">
+    <div className="h-dvh bg-gray-900 text-white p-2 pb-8 pt-3 flex flex-col gap-1.5 overflow-hidden">
       {/* Turn indicator */}
       <div className={`text-center py-1 rounded font-bold text-lg flex items-center justify-center gap-2 relative ${isMyTurn ? "bg-green-700" : "bg-gray-700"}`}>
         <img src={`/avatars/avatar_${me?.avatar ?? 0}.png`} className="w-7 h-7 rounded-full" />
@@ -227,10 +206,12 @@ export function GameScreen({ connection, playerName, isHost }: Props) {
 
       {/* Last roll */}
       {lastRoll && (
-        <div className="text-center text-sm">
+        <div className="text-center text-sm truncate">
           <span className="text-gray-300">{COMPANIES[lastRoll.colour]}</span>{" "}
           {lastRoll.effect === "Slump" ? (
             <span className="text-red-400">▼ SLUMP!</span>
+          ) : lastRoll.effect === "MarketNews" ? (
+            <span className="text-yellow-400">📰 {lastRoll.cardText}</span>
           ) : (
             <span className="text-green-400">▲({lastRoll.number})</span>
           )}
@@ -238,8 +219,7 @@ export function GameScreen({ connection, playerName, isHost }: Props) {
       )}
 
       {/* Effect modal */}
-      {effectModal && <EffectModal effect={effectModal.effect} company={effectModal.company} onDismiss={() => setEffectModal(null)} />}
-      {roundEnd && <DividendModal result={roundEnd.result} holdings={roundEnd.holdings} onDismiss={() => setRoundEnd(null)} />}
+      {roundEnd && <DividendModal result={roundEnd.result} holdings={roundEnd.holdings} onDismiss={() => { setRoundEnd(null); setAnimating(false); }} />}
 
       {/* Companies - buy/sell */}
       <div className="flex flex-col gap-1 flex-1 min-h-0">
@@ -285,7 +265,7 @@ export function GameScreen({ connection, playerName, isHost }: Props) {
       {isMyTurn && (
         <button
           onClick={() => { setError(""); connection.invoke("RollDice"); }}
-          className="bg-green-600 px-6 py-3 rounded-xl text-xl font-bold"
+          className=" bg-green-600 mt-6 px-6 py-2 rounded-xl text-xl font-bold"
         >
           🎲 Roll Dice
         </button>
