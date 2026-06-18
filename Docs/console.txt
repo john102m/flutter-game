@@ -1,64 +1,180 @@
-client:789 [vite] connecting...
-react-dom.development.js:29895 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
-client:912 [vite] connected.
-App.tsx:36 [2026-06-16T18:08:27.756Z] Error: Failed to start the connection: Error: The connection was stopped during negotiation.
-log @ Utils.ts:185
-_startInternal @ HttpConnection.ts:302
-await in _startInternal
-start @ HttpConnection.ts:137
-_startInternal @ HubConnection.ts:228
-_startWithStateTransitions @ HubConnection.ts:202
-start @ HubConnection.ts:189
-anonymousCallbackTo: useEffect @ App.tsx:36
-commitHookEffectListMount @ react-dom.development.js:23189
-commitPassiveMountOnFiber @ react-dom.development.js:24965
-commitPassiveMountEffects_complete @ react-dom.development.js:24930
-commitPassiveMountEffects_begin @ react-dom.development.js:24917
-commitPassiveMountEffects @ react-dom.development.js:24905
-flushPassiveEffectsImpl @ react-dom.development.js:27078
-flushPassiveEffects @ react-dom.development.js:27023
-(anonymous) @ react-dom.development.js:26808
-workLoop @ scheduler.development.js:266
-flushWork @ scheduler.development.js:239
-(anonymous) @ scheduler.development.js:533
+index-DLX8JpMw.js:40 Mixed Content: The page at 'https://flutter.spooch.co.uk/' was loaded over HTTPS, but requested an insecure resource 'http://192.168.1.177:5000/gamehub/negotiate?negotiateVersion=1'. This content should also be served over HTTPS.
+send @ index-DLX8JpMw.js:40
+send @ index-DLX8JpMw.js:40
+send @ index-DLX8JpMw.js:40
+post @ index-DLX8JpMw.js:40
+_getNegotiationResponse @ index-DLX8JpMw.js:40
+_startInternal @ index-DLX8JpMw.js:40
+start @ index-DLX8JpMw.js:40
+_startInternal @ index-DLX8JpMw.js:40
+_startWithStateTransitions @ index-DLX8JpMw.js:40
+start @ index-DLX8JpMw.js:40
+(anonymous) @ index-DLX8JpMw.js:40
+To @ index-DLX8JpMw.js:40
+Vn @ index-DLX8JpMw.js:40
+(anonymous) @ index-DLX8JpMw.js:40
+ke @ index-DLX8JpMw.js:25
+wt @ index-DLX8JpMw.js:25
 postMessage
-(anonymous) @ scheduler.development.js:574
-requestHostCallback @ scheduler.development.js:588
-unstable_scheduleCallback @ scheduler.development.js:441
-scheduleCallback$1 @ react-dom.development.js:27576
-ensureRootIsScheduled @ react-dom.development.js:25722
-scheduleUpdateOnFiber @ react-dom.development.js:25570
-updateContainer @ react-dom.development.js:28897
-(anonymous) @ react-dom.development.js:29353
-globalCode: http://localhost:3000/src/main.tsx @ main.tsx:6
-HttpConnection.ts:251 Uncaught (in promise) AbortError: The connection was stopped during negotiation.
-    at HttpConnection._startInternal (HttpConnection.ts:251:31)
-_startInternal @ HttpConnection.ts:251
-await in _startInternal
-start @ HttpConnection.ts:137
-_startInternal @ HubConnection.ts:228
-_startWithStateTransitions @ HubConnection.ts:202
-start @ HubConnection.ts:189
-anonymousCallbackTo: useEffect @ App.tsx:36
-commitHookEffectListMount @ react-dom.development.js:23189
-commitPassiveMountOnFiber @ react-dom.development.js:24965
-commitPassiveMountEffects_complete @ react-dom.development.js:24930
-commitPassiveMountEffects_begin @ react-dom.development.js:24917
-commitPassiveMountEffects @ react-dom.development.js:24905
-flushPassiveEffectsImpl @ react-dom.development.js:27078
-flushPassiveEffects @ react-dom.development.js:27023
-(anonymous) @ react-dom.development.js:26808
-workLoop @ scheduler.development.js:266
-flushWork @ scheduler.development.js:239
-(anonymous) @ scheduler.development.js:533
+Je @ index-DLX8JpMw.js:25
+wt @ index-DLX8JpMw.js:25
 postMessage
-(anonymous) @ scheduler.development.js:574
-requestHostCallback @ scheduler.development.js:588
-unstable_scheduleCallback @ scheduler.development.js:441
-scheduleCallback$1 @ react-dom.development.js:27576
-ensureRootIsScheduled @ react-dom.development.js:25722
-scheduleUpdateOnFiber @ react-dom.development.js:25570
-updateContainer @ react-dom.development.js:28897
-(anonymous) @ react-dom.development.js:29353
-globalCode: http://localhost:3000/src/main.tsx @ main.tsx:6
-Utils.ts:191 [2026-06-16T18:08:27.819Z] Information: WebSocket connected to ws://192.168.1.177:5000/gamehub?id=GJxzRLx2m0s-uFVPufSGLQ.
+Je @ index-DLX8JpMw.js:25
+Ve @ index-DLX8JpMw.js:25
+c.unstable_scheduleCallback @ index-DLX8JpMw.js:25
+Ha @ index-DLX8JpMw.js:40
+Ye @ index-DLX8JpMw.js:40
+yt @ index-DLX8JpMw.js:40
+Uo @ index-DLX8JpMw.js:40
+Wo.render.Hs.render @ index-DLX8JpMw.js:40
+(anonymous) @ index-DLX8JpMw.js:40
+favicon.ico:1  GET https://flutter.spooch.co.uk/favicon.ico 404 (Not Found)
+index-DLX8JpMw.js:40  POST http://192.168.1.177:5000/gamehub/negotiate?negotiateVersion=1 net::ERR_CONNECTION_REFUSED
+send @ index-DLX8JpMw.js:40
+send @ index-DLX8JpMw.js:40
+send @ index-DLX8JpMw.js:40
+post @ index-DLX8JpMw.js:40
+_getNegotiationResponse @ index-DLX8JpMw.js:40
+_startInternal @ index-DLX8JpMw.js:40
+start @ index-DLX8JpMw.js:40
+_startInternal @ index-DLX8JpMw.js:40
+_startWithStateTransitions @ index-DLX8JpMw.js:40
+start @ index-DLX8JpMw.js:40
+(anonymous) @ index-DLX8JpMw.js:40
+To @ index-DLX8JpMw.js:40
+Vn @ index-DLX8JpMw.js:40
+(anonymous) @ index-DLX8JpMw.js:40
+ke @ index-DLX8JpMw.js:25
+wt @ index-DLX8JpMw.js:25
+postMessage
+Je @ index-DLX8JpMw.js:25
+wt @ index-DLX8JpMw.js:25
+postMessage
+Je @ index-DLX8JpMw.js:25
+Ve @ index-DLX8JpMw.js:25
+c.unstable_scheduleCallback @ index-DLX8JpMw.js:25
+Ha @ index-DLX8JpMw.js:40
+Ye @ index-DLX8JpMw.js:40
+yt @ index-DLX8JpMw.js:40
+Uo @ index-DLX8JpMw.js:40
+Wo.render.Hs.render @ index-DLX8JpMw.js:40
+(anonymous) @ index-DLX8JpMw.js:40
+index-DLX8JpMw.js:40 [2026-06-18T08:29:36.482Z] Warning: Error from HTTP request. TypeError: Failed to fetch.
+log @ index-DLX8JpMw.js:40
+send @ index-DLX8JpMw.js:40
+await in send
+send @ index-DLX8JpMw.js:40
+send @ index-DLX8JpMw.js:40
+post @ index-DLX8JpMw.js:40
+_getNegotiationResponse @ index-DLX8JpMw.js:40
+_startInternal @ index-DLX8JpMw.js:40
+start @ index-DLX8JpMw.js:40
+_startInternal @ index-DLX8JpMw.js:40
+_startWithStateTransitions @ index-DLX8JpMw.js:40
+start @ index-DLX8JpMw.js:40
+(anonymous) @ index-DLX8JpMw.js:40
+To @ index-DLX8JpMw.js:40
+Vn @ index-DLX8JpMw.js:40
+(anonymous) @ index-DLX8JpMw.js:40
+ke @ index-DLX8JpMw.js:25
+wt @ index-DLX8JpMw.js:25
+postMessage
+Je @ index-DLX8JpMw.js:25
+wt @ index-DLX8JpMw.js:25
+postMessage
+Je @ index-DLX8JpMw.js:25
+Ve @ index-DLX8JpMw.js:25
+c.unstable_scheduleCallback @ index-DLX8JpMw.js:25
+Ha @ index-DLX8JpMw.js:40
+Ye @ index-DLX8JpMw.js:40
+yt @ index-DLX8JpMw.js:40
+Uo @ index-DLX8JpMw.js:40
+Wo.render.Hs.render @ index-DLX8JpMw.js:40
+(anonymous) @ index-DLX8JpMw.js:40
+index-DLX8JpMw.js:40 [2026-06-18T08:29:36.482Z] Error: Failed to complete negotiation with the server: TypeError: Failed to fetch
+log @ index-DLX8JpMw.js:40
+_getNegotiationResponse @ index-DLX8JpMw.js:40
+await in _getNegotiationResponse
+_startInternal @ index-DLX8JpMw.js:40
+start @ index-DLX8JpMw.js:40
+_startInternal @ index-DLX8JpMw.js:40
+_startWithStateTransitions @ index-DLX8JpMw.js:40
+start @ index-DLX8JpMw.js:40
+(anonymous) @ index-DLX8JpMw.js:40
+To @ index-DLX8JpMw.js:40
+Vn @ index-DLX8JpMw.js:40
+(anonymous) @ index-DLX8JpMw.js:40
+ke @ index-DLX8JpMw.js:25
+wt @ index-DLX8JpMw.js:25
+postMessage
+Je @ index-DLX8JpMw.js:25
+wt @ index-DLX8JpMw.js:25
+postMessage
+Je @ index-DLX8JpMw.js:25
+Ve @ index-DLX8JpMw.js:25
+c.unstable_scheduleCallback @ index-DLX8JpMw.js:25
+Ha @ index-DLX8JpMw.js:40
+Ye @ index-DLX8JpMw.js:40
+yt @ index-DLX8JpMw.js:40
+Uo @ index-DLX8JpMw.js:40
+Wo.render.Hs.render @ index-DLX8JpMw.js:40
+(anonymous) @ index-DLX8JpMw.js:40
+index-DLX8JpMw.js:40 [2026-06-18T08:29:36.482Z] Error: Failed to start the connection: Error: Failed to complete negotiation with the server: TypeError: Failed to fetch
+log @ index-DLX8JpMw.js:40
+_startInternal @ index-DLX8JpMw.js:40
+await in _startInternal
+start @ index-DLX8JpMw.js:40
+_startInternal @ index-DLX8JpMw.js:40
+_startWithStateTransitions @ index-DLX8JpMw.js:40
+start @ index-DLX8JpMw.js:40
+(anonymous) @ index-DLX8JpMw.js:40
+To @ index-DLX8JpMw.js:40
+Vn @ index-DLX8JpMw.js:40
+(anonymous) @ index-DLX8JpMw.js:40
+ke @ index-DLX8JpMw.js:25
+wt @ index-DLX8JpMw.js:25
+postMessage
+Je @ index-DLX8JpMw.js:25
+wt @ index-DLX8JpMw.js:25
+postMessage
+Je @ index-DLX8JpMw.js:25
+Ve @ index-DLX8JpMw.js:25
+c.unstable_scheduleCallback @ index-DLX8JpMw.js:25
+Ha @ index-DLX8JpMw.js:40
+Ye @ index-DLX8JpMw.js:40
+yt @ index-DLX8JpMw.js:40
+Uo @ index-DLX8JpMw.js:40
+Wo.render.Hs.render @ index-DLX8JpMw.js:40
+(anonymous) @ index-DLX8JpMw.js:40
+index-DLX8JpMw.js:40 Uncaught (in promise) nc: Failed to complete negotiation with the server: TypeError: Failed to fetch
+    at Vd._getNegotiationResponse (index-DLX8JpMw.js:40:103021)
+    at async Vd._startInternal (index-DLX8JpMw.js:40:100882)
+    at async Vd.start (index-DLX8JpMw.js:40:98754)
+    at async Js._startInternal (index-DLX8JpMw.js:40:73793)
+    at async Js._startWithStateTransitions (index-DLX8JpMw.js:40:73211)
+_getNegotiationResponse @ index-DLX8JpMw.js:40
+await in _getNegotiationResponse
+_startInternal @ index-DLX8JpMw.js:40
+start @ index-DLX8JpMw.js:40
+_startInternal @ index-DLX8JpMw.js:40
+_startWithStateTransitions @ index-DLX8JpMw.js:40
+start @ index-DLX8JpMw.js:40
+(anonymous) @ index-DLX8JpMw.js:40
+To @ index-DLX8JpMw.js:40
+Vn @ index-DLX8JpMw.js:40
+(anonymous) @ index-DLX8JpMw.js:40
+ke @ index-DLX8JpMw.js:25
+wt @ index-DLX8JpMw.js:25
+postMessage
+Je @ index-DLX8JpMw.js:25
+wt @ index-DLX8JpMw.js:25
+postMessage
+Je @ index-DLX8JpMw.js:25
+Ve @ index-DLX8JpMw.js:25
+c.unstable_scheduleCallback @ index-DLX8JpMw.js:25
+Ha @ index-DLX8JpMw.js:40
+Ye @ index-DLX8JpMw.js:40
+yt @ index-DLX8JpMw.js:40
+Uo @ index-DLX8JpMw.js:40
+Wo.render.Hs.render @ index-DLX8JpMw.js:40
+(anonymous) @ index-DLX8JpMw.js:40

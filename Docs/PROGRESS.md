@@ -1,5 +1,15 @@
 # Flutter — Progress Log
 
+## 2026-06-18 Session (Morning) — Icons, Tick Animation & Turn Vibe
+
+### Completed
+
+- **TV launcher icon & banner** — vector drawable banner (320×180dp) with rising stock chart, gold dice and £ symbol on dark navy background. Adaptive launcher icon with chart/£ foreground.
+- **Tick-per-row traveller animation** — peg steps one row at a time with 150ms delay, tick sound at each position. Replaced tween(600) with snap() in GameBoard. Ratchet-click feel on real TV.
+- **Handset vibration on your turn** — 100ms buzz when animating finishes and it becomes your turn. Distinct from 200ms error buzz.
+
+---
+
 ## 2026-06-17 Session (Late Evening) — Polish & UX Sync
 
 ### Completed
