@@ -12,6 +12,7 @@ export function useConnection() {
       .withAutomaticReconnect()
       .build();
 
+    (window as any).__connection = conn;
     conn.start().then(() => setConnection(conn));
     return () => { conn.stop(); };
   }, []);

@@ -8,6 +8,7 @@ public class Player
     public string Name { get; set; } = "";
     public int Cash { get; set; } = 30000; // pence (£300)
     public bool IsHost { get; set; }
+    public int Avatar { get; set; }
     public int[] Holdings { get; set; } = new int[6]; // certificates per company
 }
 
@@ -17,6 +18,7 @@ public class Company
     public int ParentPegRow { get; set; } = 22; // PAR = row 22 (£100)
     public int TravellerPegRow { get; set; } = 22; // starts on parent
     public bool HasAntiSlump { get; set; }
+    public bool IsBankrupt { get; set; }
 }
 
 public class GameState
@@ -38,7 +40,7 @@ public record DiceResult(int ColourDie, int NumberDie, BoardEffect? Effect = nul
 
 public record BoardEffect(string Type, string? CardText = null, int? CardId = null);
 
-public record CompanyRoundResult(int CompanyIndex, int DividendPercent, int ParentMove, int OldParentRow, int NewParentRow);
+public record CompanyRoundResult(int CompanyIndex, int DividendPercent, int ParentMove, int OldParentRow, int NewParentRow, bool BonusShares = false, bool Bankrupt = false);
 
 public record RoundEndResult(CompanyRoundResult[] Companies, string? Winner, int WinnerCapital);
 

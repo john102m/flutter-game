@@ -5,6 +5,7 @@ data class CompanyState(
     val parentPegRow: Double = 22.0,
     val travellerPegRow: Double = 22.0,
     val hasAntiSlump: Boolean = false,
+    val isBankrupt: Boolean = false,
     val price: Double = 10000.0
 ) {
     val indexInt get() = index.toInt()
@@ -15,10 +16,12 @@ data class CompanyState(
 data class PlayerState(
     val name: String = "",
     val cash: Double = 0.0,
-    val holdings: List<Double> = emptyList()
+    val holdings: List<Double> = emptyList(),
+    val avatar: Double = 0.0
 ) {
     val cashInt get() = cash.toInt()
     val holdingsInt get() = holdings.map { it.toInt() }
+    val avatarInt get() = avatar.toInt()
 }
 
 data class TurnState(
@@ -37,7 +40,9 @@ data class CompanyRoundResult(
     val dividendPercent: Double = 0.0,
     val parentMove: Double = 0.0,
     val oldParentRow: Double = 0.0,
-    val newParentRow: Double = 0.0
+    val newParentRow: Double = 0.0,
+    val bonusShares: Boolean = false,
+    val bankrupt: Boolean = false
 )
 
 data class RoundEndData(

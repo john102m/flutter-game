@@ -12,16 +12,16 @@ public class GameHub(GameService gameService) : Hub
         await base.OnConnectedAsync();
     }
 
-    public async Task CreateGame(string playerName)
+    public async Task CreateGame(string playerName, int avatar)
     {
-        var game = gameService.CreateGame(Context.ConnectionId, playerName);
+        var game = gameService.CreateGame(Context.ConnectionId, playerName, avatar);
         await Clients.Caller.SendAsync("GameCreated", game.GameCode);
-        await Clients.All.SendAsync("LobbyUpdated", game.Players.Select(p => p.Name).ToArray());
+        await Clients.All.SendAsync("LobbyUpdated", game.Players.Select(p => new { p.Name, p.Avatar }).ToArray());
     }
 
-    public async Task JoinGame(string code, string playerName)
+    public async Task JoinGame(string code, string playerName, int avatar)
     {
-        var player = gameService.JoinGame(code, Context.ConnectionId, playerName);
+        var player = gameService.JoinGame(code, Context.ConnectionId, playerName, avatar);
         if (player is null)
         {
             await Clients.Caller.SendAsync("Error", "Unable to join game");
@@ -29,7 +29,7 @@ public class GameHub(GameService gameService) : Hub
         }
 
         var game = gameService.GetGame()!;
-        await Clients.All.SendAsync("LobbyUpdated", game.Players.Select(p => p.Name).ToArray());
+        await Clients.All.SendAsync("LobbyUpdated", game.Players.Select(p => new { p.Name, p.Avatar }).ToArray());
     }
 
     public async Task StartGame()
@@ -111,9 +111,59 @@ public class GameHub(GameService gameService) : Hub
         if (result.RoundEnd != null)
         {
             await Clients.All.SendAsync("RoundEnd", result.RoundEnd);
+            if (result.RoundEnd.Winner != null)
+            {
+                await Clients.All.SendAsync("GameOver", result.RoundEnd.Winner, result.RoundEnd.WinnerCapital);
+            }
         }
 
         await BroadcastTurnState();
+    }
+
+    public async Task DebugGameOver()
+    {
+        var game = gameService.GetGame();
+        if (game is null || game.Players.Count == 0) return;
+
+        var winner = game.Players[0];
+        var capital = gameService.DebugForceGameOver();
+        await Clients.All.SendAsync("GameOver", winner.Name, capital);
+    }
+
+    public async Task DebugBankruptcy(int company)
+    {
+        gameService.DebugForceBankruptcy(company);
+        await Clients.All.SendAsync("Bankruptcy", company);
+        await BroadcastTurnState();
+    }
+
+    public async Task NewGame()
+    {
+        var game = gameService.GetGame();
+        if (game is null) return;
+        var host = game.Players.FirstOrDefault(p => p.IsHost);
+        if (host?.ConnectionId != Context.ConnectionId) return;
+
+        gameService.ResetGame();
+        await Clients.All.SendAsync("GameReset");
+    }
+
+    public async Task RestartGame()
+    {
+        var game = gameService.GetGame();
+        if (game is null) return;
+        var host = game.Players.FirstOrDefault(p => p.IsHost);
+        if (host?.ConnectionId != Context.ConnectionId) return;
+
+        gameService.RematchGame();
+        await Clients.All.SendAsync("GameRematch", game.Players.Select(p => new { p.Name, p.Avatar }).ToArray());
+    }
+
+    public async Task Rematch()
+    {
+        gameService.RematchGame();
+        var game = gameService.GetGame()!;
+        await Clients.All.SendAsync("GameRematch", game.Players.Select(p => new { p.Name, p.Avatar }).ToArray());
     }
 
     private async Task BroadcastTurnState()
@@ -125,6 +175,7 @@ public class GameHub(GameService gameService) : Hub
             Players = game.Players.Select(p => new
             {
                 p.Name,
+                p.Avatar,
                 Cash = p.Cash,
                 Holdings = p.Holdings
             }).ToArray(),
@@ -134,6 +185,7 @@ public class GameHub(GameService gameService) : Hub
                 c.ParentPegRow,
                 c.TravellerPegRow,
                 c.HasAntiSlump,
+                c.IsBankrupt,
                 Price = GameState.PriceForRow(c.ParentPegRow)
             }).ToArray()
         };

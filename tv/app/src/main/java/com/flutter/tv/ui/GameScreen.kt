@@ -29,7 +29,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.airbnb.lottie.compose.*
 import com.flutter.tv.GameStateHolder
+import com.flutter.tv.R
+import com.flutter.tv.SoundManager
 import com.flutter.tv.model.TurnState
 import com.flutter.tv.model.RoundEndData
 import com.flutter.tv.ui.theme.FlutterTvTheme
@@ -60,6 +63,8 @@ fun GameScreen() {
     var pendingOverlayCards by remember { mutableStateOf<List<OverlayCard>?>(null) }
     var pendingLandedRow by remember { mutableStateOf<Pair<Int, Int>?>(null) } // (companyIndex, row)
     var diceSettling by remember { mutableStateOf(false) }
+    var gameOverWinner by remember { mutableStateOf<String?>(null) }
+    var gameOverCapital by remember { mutableIntStateOf(0) }
 
     // When card shows, wait 2.5s then fade out and apply pending state
     LaunchedEffect(showCard) {
@@ -138,6 +143,7 @@ fun GameScreen() {
                 // Show dice animation
                 diceColour = (p1 as? Double)?.toInt() ?: p1.toString().toDoubleOrNull()?.toInt() ?: 0
                 diceNumber = (p2 as? Double)?.toInt() ?: p2.toString().toDoubleOrNull()?.toInt() ?: 1
+                SoundManager.playDice()
 
                 // Store landed row — apply after dice animation finishes
                 if (landedRow != null) {
@@ -148,9 +154,9 @@ fun GameScreen() {
                 diceVisible = true
 
                 val banner = when (effectType) {
-                    "Slump" -> "📉 SLUMP! Dropped back 6"
+                    "Slump" -> { SoundManager.playSlump(); "📉 SLUMP! Dropped back 6" }
                     "AntiSlump" -> "🛡️ Anti-Slump! Protected"
-                    "MarketNews" -> cardText
+                    "MarketNews" -> { SoundManager.playCard(); cardText }
                     else -> ""
                 }
                 if (banner.isNotEmpty()) {
@@ -169,6 +175,7 @@ fun GameScreen() {
                 val pricePounds = priceInt / 100
                 val verb = if (action.toString() == "buy") "bought" else "sold"
                 Log.d(TAG, "TradeExecuted: $name $verb $company @ £$pricePounds")
+                SoundManager.playCard()
                 overlayCards = listOf(OverlayCard(
                     title = "TRADE",
                     subtitle = company.toString(),
@@ -182,6 +189,7 @@ fun GameScreen() {
             connection.on("RoundEnd", { raw: Any ->
                 val json = gson.toJson(raw)
                 Log.d(TAG, "RoundEnd: $json")
+                SoundManager.playRoundEnd()
                 val companyNames = listOf("Aramco", "Exxon", "Shell", "Chevron", "Esso", "BP")
                 val result = gson.fromJson(json, RoundEndData::class.java)
                 val cards = mutableListOf<OverlayCard>()
@@ -192,14 +200,17 @@ fun GameScreen() {
                     val move = c.parentMove.toInt()
                     val arrow = when { move > 0 -> "↑$move"; move < 0 -> "↓${-move}"; else -> "—" }
                     val divText = if (div > 0) "$div% dividend" else "No dividend"
+                    val bonus = if (c.bonusShares) "\n🎉 BONUS SHARES! 1-for-1" else ""
+                    val bankruptText = if (c.bankrupt) "\n💀 BANKRUPT! Company removed" else ""
                     cards.add(OverlayCard(
                         title = companyNames[idx],
-                        body = "$divText  •  Share price $arrow",
-                        borderColor = companyDefs[idx].color,
-                        holdMs = 2000
+                        body = "$divText  •  Share price $arrow$bonus$bankruptText",
+                        borderColor = if (c.bankrupt) Color(0xFFC62828) else companyDefs[idx].color,
+                        holdMs = if (c.bonusShares || c.bankrupt) 3000 else 2000
                     ))
                 }
                 if (result.winner != null) {
+                    SoundManager.playVictory()
                     cards.add(OverlayCard(
                         title = "🏆 WINNER!",
                         body = "${result.winner} with £${result.winnerCapital.toInt() / 100}",
@@ -216,6 +227,40 @@ fun GameScreen() {
                 }
             }, Any::class.java)
 
+            connection.on("GameOver", { name: Any, capital: Any ->
+                val cap = (capital as? Double)?.toInt() ?: capital.toString().toDoubleOrNull()?.toInt() ?: 0
+                Log.d(TAG, "GameOver: $name with $cap")
+                SoundManager.playVictory()
+                gameOverWinner = name.toString()
+                gameOverCapital = cap
+            }, Any::class.java, Any::class.java)
+
+            connection.on("GameReset", {
+                Log.d(TAG, "GameReset")
+                gameOverWinner = null
+                gameOverCapital = 0
+            })
+
+            connection.on("GameRematch", { _: Any ->
+                Log.d(TAG, "GameRematch")
+                gameOverWinner = null
+                gameOverCapital = 0
+            }, Any::class.java)
+
+            connection.on("Bankruptcy", { company: Any ->
+                val idx = (company as? Double)?.toInt() ?: company.toString().toDoubleOrNull()?.toInt() ?: 0
+                val companyNames = listOf("Aramco", "Exxon", "Shell", "Chevron", "Esso", "BP")
+                Log.d(TAG, "Bankruptcy: ${companyNames[idx]}")
+                SoundManager.playSlump()
+                overlayCards = listOf(OverlayCard(
+                    title = "💀 BANKRUPT",
+                    body = "${companyNames[idx]} has gone bankrupt!\nAll shares are now worthless.",
+                    borderColor = Color(0xFFC62828),
+                    holdMs = 3000
+                ))
+                showOverlayQueue = true
+            }, Any::class.java)
+
             try {
                 connection.start().blockingAwait()
                 Log.d(TAG, "SignalR connected")
@@ -228,6 +273,7 @@ fun GameScreen() {
 
     val travellers = if (state.companies.size == 6) state.companies.map { it.travellerRow } else List(6) { 22 }
     val parents = if (state.companies.size == 6) state.companies.map { it.parentRow } else List(6) { 22 }
+    val bankrupt = if (state.companies.size == 6) state.companies.map { it.isBankrupt } else List(6) { false }
 
     Log.d(TAG, "GameScreen composing: companies=${state.companies.size}, players=${state.players.size}")
 
@@ -235,7 +281,11 @@ fun GameScreen() {
         modifier = Modifier
             .fillMaxSize()
             .scale(0.98f)
-            .background(Color(0xFF1a1a2e))
+            .background(
+                brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                    colors = listOf(Color(0xFF1a1a2e), Color(0xFF16213e), Color(0xFF0f3460))
+                )
+            )
     ) {
         Row(modifier = Modifier.fillMaxSize()) {
             val leftPlayers = state.players.take((state.players.size + 1) / 2)
@@ -250,6 +300,7 @@ fun GameScreen() {
             GameBoard(
                 animatedTravellers = travellers,
                 animatedParents = parents,
+                bankrupt = bankrupt,
                 modifier = Modifier.weight(2f)
             )
 
@@ -361,6 +412,46 @@ fun GameScreen() {
                     pendingState = null
                 }
             )
+        }
+
+        // Game Over screen
+        if (gameOverWinner != null) {
+            val confettiComposition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.confetti))
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xCC000000)),
+                contentAlignment = Alignment.Center
+            ) {
+                LottieAnimation(
+                    composition = confettiComposition,
+                    iterations = LottieConstants.IterateForever,
+                    modifier = Modifier.fillMaxSize()
+                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("🏆", fontSize = 72.sp)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "GAME OVER",
+                        color = Color(0xFFffd700),
+                        fontSize = 36.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "${gameOverWinner} wins!",
+                        color = Color.White,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Total capital: £${gameOverCapital / 100}",
+                        color = Color(0xFF90EE90),
+                        fontSize = 22.sp
+                    )
+                }
+            }
         }
     }
 }
