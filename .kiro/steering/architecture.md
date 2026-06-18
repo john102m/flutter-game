@@ -16,10 +16,15 @@ Three components communicate over SignalR WebSockets on a LAN.
 | TV | `tv/` | Shared display — board visualisation, peg positions, dice animations, market news cards, round summaries. Read-only view of server state. |
 
 ## Server structure
-- `Program.cs` — ASP.NET Core minimal API setup, SignalR + CORS config.
+- `Program.cs` — ASP.NET Core minimal API setup, SignalR + CORS config, static file serving (wwwroot).
 - `Hubs/GameHub.cs` — SignalR hub. All client↔server communication flows through here.
-- Game state classes will live under `Models/` (not yet created).
+- `Services/GameService.cs` — Singleton game logic: dice, buy/sell, round end, win detection.
+- `Models/` — `GameState`, `Player`, `Company`, `MarketNewsCard`, DTOs (`DiceResult`, `RoundEndResult`, etc).
 - No database — all state in-memory for single-game sessions.
+
+## Deployment
+- **Public:** https://flutter.spooch.co.uk — .NET server with handset built into wwwroot. TV APK connects here.
+- **Local dev:** Server on `:5000`, Vite on `:3000`, TV pointed at LAN IP.
 
 ## Communication pattern
 - **Handset → Server:** Hub method invocations (e.g. `JoinGame`, `BuyShares`, `RollDice`).

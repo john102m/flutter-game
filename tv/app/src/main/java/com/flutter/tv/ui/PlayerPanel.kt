@@ -94,15 +94,24 @@ fun PlayerCard(player: PlayerState, isCurrent: Boolean) {
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold
         )
-        // Holdings
-        player.holdingsInt.forEachIndexed { i, qty ->
-            if (qty > 0) {
-                Text(
-                    text = "${companyNames[i]}: $qty",
-                    color = Color(0xFF4a3728),
-                    fontSize = 11.sp
-                )
+        // Holdings — two per row, coloured badges
+        val held = player.holdingsInt.mapIndexedNotNull { i, qty ->
+            if (qty > 0) i to qty else null
+        }
+        held.chunked(2).forEach { row ->
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                row.forEach { (i, qty) ->
+                    Text(
+                        text = " ${companyNames[i]}:$qty ",
+                        color = Color.White,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .background(companyDefs[i].color, RoundedCornerShape(4.dp))
+                    )
+                }
             }
+            Spacer(modifier = Modifier.height(2.dp))
         }
     }
 }

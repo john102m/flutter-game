@@ -56,8 +56,8 @@ dependencies {
     // Gson for JSON parsing
     implementation("com.google.code.gson:gson:2.10.1")
 
-    // Lottie for animations
-    implementation("com.airbnb.android:lottie-compose:6.4.0")
+    // Konfetti for confetti/particle effects
+    implementation("nl.dionsegijn:konfetti-compose:2.0.5")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
 }

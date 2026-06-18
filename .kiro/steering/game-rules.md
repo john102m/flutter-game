@@ -34,4 +34,4 @@ After processing: travellers return to parent pegs, Market News reshuffled.
 - **Bankruptcy:** Parent peg hits bottom → company removed.
 
 ## Win Condition
-First player to £600+ total capital. Claims ONLY during dividend processing. Highest total wins ties.
+First player to £600+ total capital. Checked during dividend processing (round end) AND after Market News dividend payouts. Highest total wins ties.

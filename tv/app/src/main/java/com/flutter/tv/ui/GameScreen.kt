@@ -29,9 +29,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.airbnb.lottie.compose.*
+import nl.dionsegijn.konfetti.compose.KonfettiView
+import nl.dionsegijn.konfetti.core.*
+import nl.dionsegijn.konfetti.core.emitter.Emitter
+import nl.dionsegijn.konfetti.core.models.Shape
+import nl.dionsegijn.konfetti.core.models.Size
+import java.util.concurrent.TimeUnit
 import com.flutter.tv.GameStateHolder
-import com.flutter.tv.R
 import com.flutter.tv.SoundManager
 import com.flutter.tv.model.TurnState
 import com.flutter.tv.model.RoundEndData
@@ -48,9 +52,11 @@ private val gameStateHolder = GameStateHolder()
 
 @Composable
 fun GameScreen() {
+    // ─── STATE ─────────────────────────────────────────────────────────────────
     val state by gameStateHolder.state.collectAsState()
     var effectBanner by remember { mutableStateOf("") }
     var effectCompany by remember { mutableStateOf("") }
+    var pendingEffectType by remember { mutableStateOf("") }
     var showCard by remember { mutableStateOf(false) }
     var showDice by remember { mutableStateOf(false) }
     var diceVisible by remember { mutableStateOf(false) }
@@ -61,23 +67,46 @@ fun GameScreen() {
     var overlayCards by remember { mutableStateOf<List<OverlayCard>>(emptyList()) }
     var showOverlayQueue by remember { mutableStateOf(false) }
     var pendingOverlayCards by remember { mutableStateOf<List<OverlayCard>?>(null) }
+    var pendingRoundEndSound by remember { mutableStateOf(false) }
     var pendingLandedRow by remember { mutableStateOf<Pair<Int, Int>?>(null) } // (companyIndex, row)
     var diceSettling by remember { mutableStateOf(false) }
     var gameOverWinner by remember { mutableStateOf<String?>(null) }
     var gameOverCapital by remember { mutableIntStateOf(0) }
+    var pendingGameOver by remember { mutableStateOf<Triple<String, Int, List<OverlayCard>>?>(null) }
+    var winnerRevealPending by remember { mutableStateOf<Pair<String, Int>?>(null) }
 
-    // When card shows, wait 2.5s then fade out and apply pending state
+    // ─── ANIMATION SEQUENCING ───────────────────────────────────────────────────
+
+    // When card shows, play sound, wait 2.5s then fade out and apply pending state
     LaunchedEffect(showCard) {
         if (showCard) {
+            when (pendingEffectType) {
+                "Slump" -> SoundManager.playSlump()
+                "MarketNews" -> SoundManager.playCard()
+            }
+            // Cha-ching for dividend payouts
+            if (pendingEffectType == "MarketNews" && effectBanner.contains("dividend", ignoreCase = true)) {
+                delay(500)
+                SoundManager.playDividend()
+            }
             delay(2500)
             showCard = false
             pendingState?.let { gameStateHolder.update(it) }
             pendingState = null
             pendingOverlayCards?.let {
+                if (pendingRoundEndSound) { SoundManager.playRoundEnd(); pendingRoundEndSound = false }
                 overlayCards = it
                 showOverlayQueue = true
                 pendingOverlayCards = null
                 diceVisible = false
+            }
+            // If GameOver arrived during the card, start pre-announcement
+            if (!showOverlayQueue && pendingGameOver != null) {
+                val (name, cap, preCards) = pendingGameOver!!
+                pendingGameOver = null
+                winnerRevealPending = Pair(name, cap)
+                overlayCards = preCards
+                showOverlayQueue = true
             }
         }
     }
@@ -113,6 +142,7 @@ fun GameScreen() {
                 pendingState?.let { gameStateHolder.update(it) }
                 pendingState = null
                 pendingOverlayCards?.let {
+                    if (pendingRoundEndSound) { SoundManager.playRoundEnd(); pendingRoundEndSound = false }
                     overlayCards = it
                     showOverlayQueue = true
                     pendingOverlayCards = null
@@ -122,11 +152,26 @@ fun GameScreen() {
         }
     }
 
+    // When GameOver arrives and nothing else is playing, kick off the pre-announcement
+    LaunchedEffect(pendingGameOver) {
+        if (pendingGameOver != null && !showOverlayQueue && !showCard && !showDice && !diceSettling) {
+            delay(1500) // let the board settle
+            val (name, cap, preCards) = pendingGameOver!!
+            pendingGameOver = null
+            winnerRevealPending = Pair(name, cap)
+            overlayCards = preCards
+            showOverlayQueue = true
+        }
+    }
+
+    // ─── SIGNALR CONNECTION & EVENT HANDLERS ────────────────────────────────────
+
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
             val gson = Gson()
             val connection = HubConnectionBuilder
-                .create("https://flutter.spooch.co.uk/gamehub")
+                //.create("https://flutter.spooch.co.uk/gamehub")
+                .create("http://192.168.1.177:5000/gamehub")
                 .build()
 
             connection.on("TurnState", { raw: Any ->
@@ -162,18 +207,20 @@ fun GameScreen() {
                 diceVisible = true
 
                 val banner = when (effectType) {
-                    "Slump" -> { SoundManager.playSlump(); "📉 SLUMP! Dropped back 6" }
+                    "Slump" -> "📉 SLUMP! Dropped back 6"
                     "AntiSlump" -> "🛡️ Anti-Slump! Protected"
-                    "MarketNews" -> { SoundManager.playCard(); cardText }
+                    "MarketNews" -> cardText
                     else -> ""
                 }
                 if (banner.isNotEmpty()) {
                     effectBanner = banner
                     effectCompany = company
+                    pendingEffectType = effectType
                     pendingEffect = true
                 } else {
                     effectBanner = ""
                     effectCompany = ""
+                    pendingEffectType = ""
                     pendingEffect = false
                 }
             }, Any::class.java, Any::class.java, Any::class.java, Any::class.java, Any::class.java, Any::class.java)
@@ -182,13 +229,15 @@ fun GameScreen() {
                 val priceInt = (price as? Double)?.toInt() ?: price.toString().toDoubleOrNull()?.toInt() ?: 0
                 val pricePounds = priceInt / 100
                 val verb = if (action.toString() == "buy") "bought" else "sold"
-                Log.d(TAG, "TradeExecuted: $name $verb $company @ £$pricePounds")
+                val companyStr = company.toString()
+                val companyIdx = companyDefs.indexOfFirst { it.name == companyStr }.coerceAtLeast(0)
+                Log.d(TAG, "TradeExecuted: $name $verb $companyStr @ £$pricePounds")
                 SoundManager.playCard()
                 overlayCards = listOf(OverlayCard(
                     title = "TRADE",
-                    subtitle = company.toString(),
+                    subtitle = companyStr,
                     body = "$name $verb 100 shares @ £$pricePounds",
-                    borderColor = if (action.toString() == "buy") androidx.compose.ui.graphics.Color(0xFF4CAF50) else androidx.compose.ui.graphics.Color(0xFFFF5722),
+                    borderColor = companyDefs[companyIdx].color,
                     holdMs = 1500
                 ))
                 showOverlayQueue = true
@@ -197,62 +246,70 @@ fun GameScreen() {
             connection.on("RoundEnd", { raw: Any ->
                 val json = gson.toJson(raw)
                 Log.d(TAG, "RoundEnd: $json")
-                SoundManager.playRoundEnd()
                 val companyNames = listOf("Aramco", "Exxon", "Shell", "Chevron", "Esso", "BP")
                 val result = gson.fromJson(json, RoundEndData::class.java)
                 val cards = mutableListOf<OverlayCard>()
                 cards.add(OverlayCard(title = "ROUND END", body = "Assessing all companies...", holdMs = 2000))
-                result.companies.forEach { c ->
-                    val idx = c.companyIndex.toInt()
-                    val div = c.dividendPercent.toInt()
-                    val move = c.parentMove.toInt()
-                    val arrow = when { move > 0 -> "↑$move"; move < 0 -> "↓${-move}"; else -> "—" }
-                    val divText = if (div > 0) "$div% dividend" else "No dividend"
-                    val bonus = if (c.bonusShares) "\n🎉 BONUS SHARES! 1-for-1" else ""
-                    val bankruptText = if (c.bankrupt) "\n💀 BANKRUPT! Company removed" else ""
-                    cards.add(OverlayCard(
-                        title = companyNames[idx],
-                        body = "$divText  •  Share price $arrow$bonus$bankruptText",
-                        borderColor = if (c.bankrupt) Color(0xFFC62828) else companyDefs[idx].color,
-                        holdMs = if (c.bonusShares || c.bankrupt) 3000 else 2000
-                    ))
-                }
-                if (result.winner != null) {
-                    SoundManager.playVictory()
-                    cards.add(OverlayCard(
-                        title = "🏆 WINNER!",
-                        body = "${result.winner} with £${result.winnerCapital.toInt() / 100}",
-                        borderColor = androidx.compose.ui.graphics.Color(0xFFffd700),
-                        holdMs = 5000
-                    ))
+                // If there's a winner, skip per-company cards — go straight to announcement
+                if (result.winner == null) {
+                    result.companies.forEach { c ->
+                        val idx = c.companyIndex.toInt()
+                        val div = c.dividendPercent.toInt()
+                        val move = c.parentMove.toInt()
+                        val arrow = when { move > 0 -> "↑$move"; move < 0 -> "↓${-move}"; else -> "—" }
+                        val divText = if (div > 0) "$div% dividend" else "No dividend"
+                        val bonus = if (c.bonusShares) "\n🎉 BONUS SHARES! 1-for-1" else ""
+                        val bankruptText = if (c.bankrupt) "\n💀 BANKRUPT! Company removed" else ""
+                        cards.add(OverlayCard(
+                            title = companyNames[idx],
+                            body = "$divText  •  Share price $arrow$bonus$bankruptText",
+                            borderColor = if (c.bankrupt) Color(0xFFC62828) else companyDefs[idx].color,
+                            holdMs = if (c.bonusShares || c.bankrupt) 3000 else 2000
+                        ))
+                    }
                 }
                 overlayCards = cards
                 if (showDice || showCard) {
                     pendingOverlayCards = cards
+                    pendingRoundEndSound = true
                 } else {
+                    SoundManager.playRoundEnd()
                     showOverlayQueue = true
                     diceVisible = false
                 }
             }, Any::class.java)
 
-            connection.on("GameOver", { name: Any, capital: Any ->
+            connection.on("GameOver", { name: Any, capital: Any, reason: Any ->
                 val cap = (capital as? Double)?.toInt() ?: capital.toString().toDoubleOrNull()?.toInt() ?: 0
-                Log.d(TAG, "GameOver: $name with $cap")
-                SoundManager.playVictory()
-                gameOverWinner = name.toString()
-                gameOverCapital = cap
-            }, Any::class.java, Any::class.java)
+                val reasonStr = reason.toString()
+                Log.d(TAG, "GameOver: $name with $cap ($reasonStr)")
+                // Don't show immediately — queue pre-announcement card then reveal
+                val preCards = listOf(
+                    OverlayCard(
+                        title = "⚡ WINNER DETECTED",
+                        body = "$reasonStr pushed $name over £600!",
+                        borderColor = Color(0xFFffd700),
+                        holdMs = 3000
+                    )
+                )
+                // Store winner info — will be revealed after overlay queue finishes
+                pendingGameOver = Triple(name.toString(), cap, preCards)
+            }, Any::class.java, Any::class.java, Any::class.java)
 
             connection.on("GameReset", {
                 Log.d(TAG, "GameReset")
                 gameOverWinner = null
                 gameOverCapital = 0
+                pendingGameOver = null
+                winnerRevealPending = null
             })
 
             connection.on("GameRematch", { _: Any ->
                 Log.d(TAG, "GameRematch")
                 gameOverWinner = null
                 gameOverCapital = 0
+                pendingGameOver = null
+                winnerRevealPending = null
             }, Any::class.java)
 
             connection.on("Bankruptcy", { company: Any ->
@@ -278,6 +335,8 @@ fun GameScreen() {
             }
         }
     }
+
+    // ─── UI LAYOUT ─────────────────────────────────────────────────────────────
 
     val travellers = if (state.companies.size == 6) state.companies.map { it.travellerRow } else List(6) { 22 }
     val parents = if (state.companies.size == 6) state.companies.map { it.parentRow } else List(6) { 22 }
@@ -343,7 +402,7 @@ fun GameScreen() {
         // Dice roll overlay
         if (showDice) {
             Box(
-                modifier = Modifier.fillMaxSize().padding(end = 80.dp, top = 200.dp),
+                modifier = Modifier.fillMaxSize().padding(end = 50.dp, top = 400.dp),
                 contentAlignment = Alignment.CenterEnd
             ) {
                 DiceRoll(
@@ -356,7 +415,7 @@ fun GameScreen() {
             }
         } else if (diceVisible) {
             Box(
-                modifier = Modifier.fillMaxSize().padding(end = 80.dp, top = 200.dp),
+                modifier = Modifier.fillMaxSize().padding(end = 50.dp, top = 400.dp),
                 contentAlignment = Alignment.CenterEnd
             ) {
                 DiceResult(colourResult = diceColour, numberResult = diceNumber)
@@ -379,7 +438,7 @@ fun GameScreen() {
                         .shadow(8.dp, RoundedCornerShape(16.dp))
                         .clip(RoundedCornerShape(16.dp))
                         .background(Color(0xFFF5F0E8))
-                        .border(2.dp, Color(0xFFffd700), RoundedCornerShape(16.dp))
+                        .border(2.dp, companyDefs[diceColour].color, RoundedCornerShape(16.dp))
                         .padding(20.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -392,10 +451,11 @@ fun GameScreen() {
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = effectCompany,
-                            color = Color.DarkGray,
+                            text = " ${effectCompany} ",
+                            color = Color.White,
                             fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.background(companyDefs[diceColour].color, RoundedCornerShape(4.dp))
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
@@ -418,23 +478,66 @@ fun GameScreen() {
                     overlayCards = emptyList()
                     pendingState?.let { gameStateHolder.update(it) }
                     pendingState = null
+                    // Stage 1: queue pre-announcement cards
+                    if (pendingGameOver != null) {
+                        val (name, cap, preCards) = pendingGameOver!!
+                        pendingGameOver = null
+                        winnerRevealPending = Pair(name, cap)
+                        overlayCards = preCards
+                        showOverlayQueue = true
+                    } else if (winnerRevealPending != null) {
+                        // Stage 2: pre-announcement done, reveal winner
+                        val (name, cap) = winnerRevealPending!!
+                        winnerRevealPending = null
+                        SoundManager.playVictory()
+                        gameOverWinner = name
+                        gameOverCapital = cap
+                    }
                 }
             )
         }
 
         // Game Over screen
         if (gameOverWinner != null) {
-            val confettiComposition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.confetti))
+            val konfettiParties = remember {
+                val party = Party(
+                    speed = 10f,
+                    maxSpeed = 30f,
+                    damping = 0.9f,
+                    angle = Angle.RIGHT - 45,
+                    spread = Spread.SMALL,
+                    size = listOf(Size.SMALL, Size.LARGE),
+                    shapes = listOf(Shape.Square, Shape.Circle),
+                    colors = listOf(0xfce18a, 0xff726d, 0xf4306d, 0xb48def, 0xffd700),
+                    timeToLive = 5000L,
+                    rotation = Rotation(),
+                    emitter = Emitter(duration = 10, TimeUnit.SECONDS).perSecond(40),
+                    position = Position.Relative(0.0, 0.5)
+                )
+                listOf(
+                    party,
+                    party.copy(
+                        angle = Angle.LEFT + 45,
+                        position = Position.Relative(1.0, 0.5)
+                    )
+                )
+            }
+            val leaderboard = state.players.map { p ->
+                val shares = p.holdingsInt.mapIndexed { i, h ->
+                    h * (state.companies.getOrNull(i)?.price?.toInt() ?: 0)
+                }.sum()
+                Triple(p.name, p.cashInt, shares)
+            }.sortedByDescending { it.second + it.third }
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color(0xCC000000)),
                 contentAlignment = Alignment.Center
             ) {
-                LottieAnimation(
-                    composition = confettiComposition,
-                    iterations = LottieConstants.IterateForever,
-                    modifier = Modifier.fillMaxSize()
+                KonfettiView(
+                    modifier = Modifier.fillMaxSize(),
+                    parties = konfettiParties
                 )
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("🏆", fontSize = 72.sp)
@@ -458,6 +561,19 @@ fun GameScreen() {
                         color = Color(0xFF90EE90),
                         fontSize = 22.sp
                     )
+                    // Leaderboard
+                    Spacer(modifier = Modifier.height(24.dp))
+                    leaderboard.forEach { (name, cash, shares) ->
+                        val total = cash + shares
+                        val isWinner = name == gameOverWinner
+                        Text(
+                            text = "$name  —  Cash £${cash / 100}  •  Shares £${shares / 100}  •  Total £${total / 100}",
+                            color = if (isWinner) Color(0xFFffd700) else Color(0xFFCCCCCC),
+                            fontSize = 16.sp,
+                            fontWeight = if (isWinner) FontWeight.Bold else FontWeight.Normal
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
                 }
             }
         }

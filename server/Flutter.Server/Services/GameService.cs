@@ -143,9 +143,27 @@ public class GameService
         else if (company.TravellerPegRow == MarketNewsRow)
         {
             var card = _deck.Draw();
-            effect = new BoardEffect("MarketNews", card.Text, card.Id);
+            var displayText = card.Effect switch
+            {
+                CardEffect.ParentPegUp => $"{card.Text}\n📈 Share price up £{card.Value * 10}!",
+                CardEffect.ParentPegDown => $"{card.Text}\n📉 Share price down £{card.Value * 10}!",
+                _ => card.Text
+            };
+            effect = new BoardEffect("MarketNews", displayText, card.Id);
             Console.WriteLine($"[M] Company {colourDie} drew card #{card.Id}: {card.Text} ({card.Effect} {card.Value})");
             ApplyCard(card, company);
+
+            // Market News dividend can trigger a win
+            if (card.Effect == CardEffect.Dividend)
+            {
+                var (winner, capital) = CheckWinner();
+                if (winner != null)
+                {
+                    _game!.Phase = GamePhase.GameOver;
+                    _game.CurrentPlayerIndex = (_game.CurrentPlayerIndex + 1) % _game.Players.Count;
+                    return new DiceResult(colourDie, numberDie, effect, null, landedRow, winner, capital, "Market News dividend");
+                }
+            }
         }
 
         // Check if round ends (any traveller hit top row)
@@ -219,22 +237,12 @@ public class GameService
         _deck.Shuffle();
 
         // Win condition check
-        string? winner = null;
-        int winnerCapital = 0;
-        foreach (var player in _game.Players)
-        {
-            var capital = TotalCapital(player);
-            if (capital >= WinThreshold && capital > winnerCapital)
-            {
-                winner = player.Name;
-                winnerCapital = capital;
-            }
-        }
+        var (winner, winnerCapital) = CheckWinner();
 
         if (winner != null)
             _game.Phase = GamePhase.GameOver;
 
-        return new RoundEndResult(companyResults, winner, winnerCapital);
+        return new RoundEndResult(companyResults, winner, winnerCapital, "Dividends");
     }
 
     private (int dividendPercent, int parentMove) AssessCompany(Company company)
@@ -262,6 +270,22 @@ public class GameService
         for (int i = 0; i < CompanyCount; i++)
             shareValue += player.Holdings[i] * GameState.PriceForRow(_game!.Companies[i].ParentPegRow);
         return player.Cash + shareValue;
+    }
+
+    private (string? Name, int Capital) CheckWinner()
+    {
+        string? winner = null;
+        int winnerCapital = 0;
+        foreach (var player in _game!.Players)
+        {
+            var capital = TotalCapital(player);
+            if (capital >= WinThreshold && capital > winnerCapital)
+            {
+                winner = player.Name;
+                winnerCapital = capital;
+            }
+        }
+        return (winner, winnerCapital);
     }
 
     private void ApplyCard(MarketNewsCard card, Company company)
