@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { HubConnectionBuilder, HubConnection } from "@microsoft/signalr";
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? "http://localhost:5000";
+const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? "";
 
 export function useConnection() {
   const [connection, setConnection] = useState<HubConnection | null>(null);

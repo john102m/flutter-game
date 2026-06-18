@@ -1,6 +1,62 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <solid android:color="#1a1a2e" />
-    <size android:width="320dp" android:height="180dp" />
-</shape>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+
+    <!-- Dark background -->
+    <path
+        android:pathData="M0,0 L320,0 L320,180 L0,180 Z"
+        android:fillColor="#1a1a2e" />
+
+    <!-- Subtle grid lines -->
+    <path
+        android:pathData="M40,40 L40,150 M100,40 L100,150 M160,40 L160,150 M220,40 L220,150 M280,40 L280,150"
+        android:strokeColor="#2a2a4e"
+        android:strokeWidth="0.5" />
+    <path
+        android:pathData="M30,60 L290,60 M30,90 L290,90 M30,120 L290,120 M30,150 L290,150"
+        android:strokeColor="#2a2a4e"
+        android:strokeWidth="0.5" />
+
+    <!-- Rising stock line (green) -->
+    <path
+        android:pathData="M30,140 L70,130 L110,135 L150,110 L190,90 L230,60 L270,45 L290,38"
+        android:strokeColor="#4CAF50"
+        android:strokeWidth="3.5"
+        android:fillColor="@android:color/transparent"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- Green glow area under the line -->
+    <path
+        android:pathData="M30,140 L70,130 L110,135 L150,110 L190,90 L230,60 L270,45 L290,38 L290,150 L30,150 Z"
+        android:fillColor="#1B5E20"
+        android:fillAlpha="0.3" />
+
+    <!-- Dice icon (top-left) -->
+    <path
+        android:pathData="M22,12 L42,12 A4,4 0 0,1 46,16 L46,36 A4,4 0 0,1 42,40 L22,40 A4,4 0 0,1 18,36 L18,16 A4,4 0 0,1 22,12 Z"
+        android:fillColor="#FFD700"
+        android:fillAlpha="0.9" />
+    <!-- Dice dots -->
+    <path
+        android:pathData="M26,20 A2,2 0 1,1 26.01,20"
+        android:fillColor="#1a1a2e" />
+    <path
+        android:pathData="M32,26 A2,2 0 1,1 32.01,26"
+        android:fillColor="#1a1a2e" />
+    <path
+        android:pathData="M38,32 A2,2 0 1,1 38.01,32"
+        android:fillColor="#1a1a2e" />
+
+    <!-- Pound sign (top-right) -->
+    <path
+        android:pathData="M272,18 Q280,12 286,18 M274,24 L288,24 M270,34 Q276,40 290,36"
+        android:strokeColor="#FFD700"
+        android:strokeWidth="2.5"
+        android:fillColor="@android:color/transparent"
+        android:strokeLineCap="round" />
+
+</vector>

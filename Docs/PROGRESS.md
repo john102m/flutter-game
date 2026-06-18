@@ -1,5 +1,15 @@
 # Flutter — Progress Log
 
+## 2026-06-18 Session (Morning) — Icons, Tick Animation & Turn Vibe
+
+### Completed
+
+- **TV launcher icon & banner** — vector drawable banner (320×180dp) with rising stock chart, gold dice and £ symbol on dark navy background. Adaptive launcher icon with chart/£ foreground.
+- **Tick-per-row traveller animation** — peg steps one row at a time with 150ms delay, tick sound at each position. Replaced tween(600) with snap() in GameBoard. Ratchet-click feel on real TV.
+- **Handset vibration on your turn** — 100ms buzz when animating finishes and it becomes your turn. Distinct from 200ms error buzz.
+
+---
+
 ## 2026-06-17 Session (Late Evening) — Polish & UX Sync
 
 ### Completed
@@ -116,13 +126,13 @@
 7. ~~**Canvas-based particle sparkles on dividends**~~ ✓
 8. ~~**Spring animations on peg movement**~~ reverted — too much
 9. ~~**Gradient/glow effects on the active player**~~ ✓
-10. **Serve handset from .NET server** — `npm run build` → static files middleware, single process for game night
+10. ~~**Serve handset from .NET server**~~ ✓ — `npm run build:deploy` → wwwroot, single `dotnet run` for game night
 11. **Better Lottie confetti** — replace minimal hand-crafted JSON with a proper LottieFiles animation
 12. **Share supply limit** — enforce 10 certificates per company
 
 ---
 
-*Updated: 2026-06-17*
+*Updated: 2026-06-18*
 
 ## 2026-06-16 Session
 

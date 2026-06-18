@@ -135,6 +135,10 @@ export function GameScreen({ connection, playerName, isHost }: Props) {
     };
   }, [connection]);
 
+  useEffect(() => {
+    if (turnState?.currentPlayer === playerName && !animating) navigator.vibrate?.(100);
+  }, [turnState?.currentPlayer, animating]);
+
   if (!turnState) {
     return <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">Loading...</div>;
   }

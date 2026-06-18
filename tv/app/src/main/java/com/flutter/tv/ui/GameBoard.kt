@@ -1,6 +1,7 @@
 package com.flutter.tv.ui
 
 import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -72,7 +73,7 @@ val boardRows = listOf(
 @Composable
 fun GameBoard(animatedTravellers: List<Int>, animatedParents: List<Int>, bankrupt: List<Boolean> = List(6) { false }, modifier: Modifier = Modifier) {
     val travellers = animatedTravellers.map { target ->
-        val anim by animateIntAsState(targetValue = target, animationSpec = tween(600))
+        val anim by animateIntAsState(targetValue = target, animationSpec = snap())
         anim
     }
     val parents = animatedParents.map { target ->

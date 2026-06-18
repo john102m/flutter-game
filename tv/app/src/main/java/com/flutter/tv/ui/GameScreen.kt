@@ -86,17 +86,25 @@ fun GameScreen() {
     LaunchedEffect(showDice) {
         if (!showDice && diceVisible) {
             diceSettling = true
-            // Move traveller peg
+            // Move traveller peg step-by-step with tick per row
             pendingLandedRow?.let { (idx, row) ->
                 val currentState = gameStateHolder.state.value
-                val updatedCompanies = currentState.companies.mapIndexed { i, c ->
-                    if (i == idx) c.copy(travellerPegRow = row.toDouble()) else c
+                val startRow = currentState.companies[idx].travellerRow
+                val step = if (row < startRow) -1 else 1
+                var r = startRow
+                while (r != row) {
+                    r += step
+                    val updated = currentState.companies.mapIndexed { i, c ->
+                        if (i == idx) c.copy(travellerPegRow = r.toDouble()) else c
+                    }
+                    gameStateHolder.update(currentState.copy(companies = updated))
+                    SoundManager.playTick()
+                    delay(150)
                 }
-                gameStateHolder.update(currentState.copy(companies = updatedCompanies))
                 pendingLandedRow = null
             }
-            // Pause so the peg position is visible before next overlay
-            delay(1200)
+            // Brief pause after peg lands before next overlay
+            delay(400)
             diceSettling = false
             if (pendingEffect) {
                 showCard = true
@@ -118,7 +126,7 @@ fun GameScreen() {
         withContext(Dispatchers.IO) {
             val gson = Gson()
             val connection = HubConnectionBuilder
-                .create("http://192.168.1.177:5000/gamehub")
+                .create("https://flutter.spooch.co.uk/gamehub")
                 .build()
 
             connection.on("TurnState", { raw: Any ->

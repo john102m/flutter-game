@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+https://go.microsoft.com/fwlink/?LinkID=208121.
+-->
+<Project>
+  <PropertyGroup>
+    <TimeStampOfAssociatedLegacyPublishXmlFile />
+    <EncryptedPassword>AQAAANCMnd8BFdERjHoAwE/Cl+sBAAAAvqVLqKWlLUSjuyaaN8usbgAAAAACAAAAAAAQZgAAAAEAACAAAAA1oj/9+ysxLp3N/8+heQe/VauosME4yJZmHG5R1dyX2AAAAAAOgAAAAAIAACAAAAC566TgjQfRZYBJrt8g+RZyeKGY5sqYrFjQkyqQOJbw2SAAAAAFVG3VL6o9wMsRCG7eKUiR9COsyyii8H/PEh9F4LNzBkAAAAChvRWK2uISg/GdzgTLg1bzqJcFRgstzKUd8fGCLCaKdqrgownUCdyjdNw1SkmMXuPrMCQreBUXYaOvqyacn3Sq</EncryptedPassword>
+    <_PublishTargetUrl>ftp://5.77.41.136/flutter.spooch.co.uk</_PublishTargetUrl>
+    <History>True|2026-06-18T08:31:31.0157386Z;False|2026-06-18T09:31:13.5997853+01:00;True|2026-06-18T09:28:43.8894407+01:00;False|2026-06-18T09:28:24.9802915+01:00;True|2026-06-18T09:19:25.7060801+01:00;</History>
+    <LastFailureDetails />
+  </PropertyGroup>
+  <ItemGroup>
+    <File Include="appsettings.json">
+      <publishTime>06/15/2026 19:59:21</publishTime>
+    </File>
+    <File Include="Flutter.Server.deps.json">
+      <publishTime>06/18/2026 09:31:20</publishTime>
+    </File>
+    <File Include="Flutter.Server.dll">
+      <publishTime>06/18/2026 09:31:19</publishTime>
+    </File>
+    <File Include="Flutter.Server.exe">
+      <publishTime>06/18/2026 09:31:19</publishTime>
+    </File>
+    <File Include="Flutter.Server.pdb">
+      <publishTime>06/18/2026 09:31:19</publishTime>
+    </File>
+    <File Include="Flutter.Server.runtimeconfig.json">
+      <publishTime>06/18/2026 09:19:12</publishTime>
+    </File>
+    <File Include="web.config">
+      <publishTime>06/18/2026 09:31:20</publishTime>
+    </File>
+    <File Include="wwwroot/assets/index-Ca3Eb2hv.css">
+      <publishTime>06/18/2026 09:30:46</publishTime>
+    </File>
+    <File Include="wwwroot/assets/index-CgBWk6Cb.js">
+      <publishTime>06/18/2026 09:30:46</publishTime>
+    </File>
+    <File Include="wwwroot/assets/index-DLX8JpMw.js">
+      <publishTime>06/18/2026 08:44:50</publishTime>
+    </File>
+    <File Include="wwwroot/avatars/avatar_0.png">
+      <publishTime>06/18/2026 07:07:09</publishTime>
+    </File>
+    <File Include="wwwroot/avatars/avatar_1.png">
+      <publishTime>06/18/2026 07:07:10</publishTime>
+    </File>
+    <File Include="wwwroot/avatars/avatar_2.png">
+      <publishTime>06/18/2026 07:07:10</publishTime>
+    </File>
+    <File Include="wwwroot/avatars/avatar_3.png">
+      <publishTime>06/18/2026 07:07:10</publishTime>
+    </File>
+    <File Include="wwwroot/avatars/avatar_4.png">
+      <publishTime>06/18/2026 07:07:11</publishTime>
+    </File>
+    <File Include="wwwroot/avatars/avatar_5.png">
+      <publishTime>06/18/2026 07:07:11</publishTime>
+    </File>
+    <File Include="wwwroot/avatars/avatar_6.png">
+      <publishTime>06/18/2026 07:07:11</publishTime>
+    </File>
+    <File Include="wwwroot/avatars/avatar_7.png">
+      <publishTime>06/18/2026 07:07:12</publishTime>
+    </File>
+    <File Include="wwwroot/avatars/avatar_8.png">
+      <publishTime>06/18/2026 07:07:12</publishTime>
+    </File>
+    <File Include="wwwroot/index.html">
+      <publishTime>06/18/2026 09:30:46</publishTime>
+    </File>
+  </ItemGroup>
+</Project>
