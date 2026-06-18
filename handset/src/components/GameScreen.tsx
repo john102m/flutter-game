@@ -100,6 +100,7 @@ export function GameScreen({ connection, playerName, isHost }: Props) {
   const [animating, setAnimating] = useState(false);
   const [roundEnd, setRoundEnd] = useState<{ result: RoundEndResult; holdings: number[] } | null>(null);
   const holdingsRef = useRef<number[]>([0,0,0,0,0,0]);
+  const roundEndRef = useRef(false);
   const [showRestart, setShowRestart] = useState(false);
 
   useEffect(() => {
@@ -111,13 +112,14 @@ export function GameScreen({ connection, playerName, isHost }: Props) {
     connection.on("DiceRolled", (colour: number, num: number, effectType: string, cardText: string, _companyName: string) => {
       setAnimating(true);
       setTimeout(() => setLastRoll({ colour, number: num, effect: effectType || undefined, cardText: cardText || undefined }), 3000);
-      setTimeout(() => setAnimating(false), effectType ? 5000 : 3000);
+      setTimeout(() => { if (!roundEndRef.current) setAnimating(false); }, effectType ? 5000 : 3000);
     });
     connection.on("Error", (msg: string) => {
       setError(msg);
       navigator.vibrate?.(200);
     });
     connection.on("RoundEnd", (result: RoundEndResult) => {
+      roundEndRef.current = true;
       setAnimating(true);
       const cardCount = result.companies.length + 1 + (result.winner ? 1 : 0);
       setTimeout(() => setRoundEnd({ result, holdings: [...holdingsRef.current] }), cardCount * 2400);
@@ -219,7 +221,7 @@ export function GameScreen({ connection, playerName, isHost }: Props) {
       )}
 
       {/* Effect modal */}
-      {roundEnd && <DividendModal result={roundEnd.result} holdings={roundEnd.holdings} onDismiss={() => { setRoundEnd(null); setAnimating(false); }} />}
+      {roundEnd && <DividendModal result={roundEnd.result} holdings={roundEnd.holdings} onDismiss={() => { setRoundEnd(null); setAnimating(false); roundEndRef.current = false; }} />}
 
       {/* Companies - buy/sell */}
       <div className="flex flex-col gap-1 flex-1 min-h-0">

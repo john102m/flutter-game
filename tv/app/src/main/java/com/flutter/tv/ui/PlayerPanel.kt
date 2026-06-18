@@ -63,11 +63,13 @@ fun PlayerCard(player: PlayerState, isCurrent: Boolean) {
         dp.dp
     } else 0.dp
 
+    val borderWidth = if (isCurrent) 3.dp else 1.dp
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(glowElevation, RoundedCornerShape(8.dp), ambientColor = Color(0xFF4CAF50), spotColor = Color(0xFF4CAF50))
-            .border(2.dp, borderColor, RoundedCornerShape(8.dp))
+            .border(borderWidth, borderColor, RoundedCornerShape(8.dp))
             .background(Color(0xFFE8E0CC), RoundedCornerShape(8.dp))
             .padding(12.dp)
     ) {
