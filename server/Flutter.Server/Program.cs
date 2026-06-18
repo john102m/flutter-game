@@ -20,12 +20,14 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 app.UseCors();
+app.UseDefaultFiles();
+app.UseStaticFiles();
 app.MapHub<GameHub>("/gamehub");
-app.MapGet("/", () => "Flutter Server running");
 app.MapGet("/admin/reset", (GameService gs, IHubContext<GameHub> hub) => {
     gs.ResetGame();
     hub.Clients.All.SendAsync("GameReset");
     return "Game reset";
 });
+app.MapFallbackToFile("index.html");
 
 app.Run();

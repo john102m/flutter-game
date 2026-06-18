@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/components/connectscreen.tsx","./src/components/gamescreen.tsx","./src/components/lobbyscreen.tsx","./src/hooks/useconnection.ts"],"version":"5.9.3"}
