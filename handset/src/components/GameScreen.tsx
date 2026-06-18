@@ -17,6 +17,8 @@ interface PlayerState {
   cash: number;
   holdings: number[];
   avatar?: number;
+  isAi?: boolean;
+  emoji?: string;
 }
 
 interface TurnState {
@@ -150,7 +152,12 @@ export function GameScreen({ connection, playerName, isHost }: Props) {
     <div className="h-dvh bg-gray-900 text-white p-2 pb-8 pt-3 flex flex-col gap-1.5 overflow-hidden">
       {/* Turn indicator */}
       <div className={`text-center py-1 rounded font-bold text-lg flex items-center justify-center gap-2 relative ${isMyTurn ? "bg-green-700" : "bg-gray-700"}`}>
-        <img src={`/avatars/avatar_${me?.avatar ?? 0}.png`} className="w-7 h-7 rounded-full" />
+        {(() => {
+          const current = turnState.players.find(p => p.name === turnState.currentPlayer);
+          return current?.isAi
+            ? <span className="w-7 h-7 flex items-center justify-center text-lg">{current.emoji || '🤖'}</span>
+            : <img src={`/avatars/avatar_${current?.avatar ?? 0}.png`} className="w-7 h-7 rounded-full" />;
+        })()}
         {isMyTurn ? `Your Turn ${me?.name}` : `Waiting for ${turnState.currentPlayer}`}
         {isHost && (
           <button

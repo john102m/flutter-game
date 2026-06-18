@@ -2,7 +2,7 @@ using Flutter.Server.Models;
 
 namespace Flutter.Server.Services;
 
-public class GameService
+public class GameService(SessionMemory memory)
 {
     // Board layout
     private const int TopRow = 2;
@@ -11,6 +11,7 @@ public class GameService
     private const int MarketNewsRow = 11;
     private const int SlumpDrop = 6;
     private const int CompanyCount = 6;
+    private const int MaxCertificatesPerCompany = 10;
 
     // Money (in pence)
     private const int Brokerage = 500;
@@ -19,6 +20,23 @@ public class GameService
 
     private GameState? _game;
     private readonly MarketNewsDeck _deck = new();
+
+    // Human pace tracking
+    private DateTime _turnStartedAt;
+    private readonly List<double> _humanTurnDurations = new();
+
+    public double AverageHumanTurnSeconds =>
+        _humanTurnDurations.Count == 0 ? 4.0 : _humanTurnDurations.TakeLast(10).Average();
+
+    public void MarkTurnStarted() => _turnStartedAt = DateTime.UtcNow;
+
+    public void RecordHumanRoll()
+    {
+        if (_turnStartedAt == default) return;
+        var duration = (DateTime.UtcNow - _turnStartedAt).TotalSeconds;
+        if (duration is > 0.5 and < 30) // ignore outliers
+            _humanTurnDurations.Add(duration);
+    }
 
     public GameState CreateGame(string hostConnectionId, string hostName, int avatar)
     {
@@ -84,6 +102,8 @@ public class GameService
         var cost = price + Brokerage;
 
         if (price == 0) return "Company is bankrupt";
+        if (_game.Players.Sum(p => p.Holdings[company]) >= MaxCertificatesPerCompany)
+            return "No shares available";
         if (player.Cash < cost) return "Not enough cash";
 
         player.Cash -= cost;
@@ -108,6 +128,10 @@ public class GameService
     public DiceResult RollDice(string connectionId)
     {
         if (!IsCurrentPlayer(connectionId)) return null!;
+
+        // Track human pace
+        if (!_game!.CurrentPlayer.IsAi)
+            RecordHumanRoll();
 
         var colourDie = Random.Shared.Next(0, CompanyCount);
 
@@ -137,6 +161,7 @@ public class GameService
                 var before = company.TravellerPegRow;
                 company.TravellerPegRow = Math.Min(company.TravellerPegRow + SlumpDrop, company.ParentPegRow);
                 effect = new BoardEffect("Slump");
+                memory.RecordSlump(colourDie);
                 Console.WriteLine($"[SLUMP] Company {colourDie} dropped from row {before} to {company.TravellerPegRow}");
             }
         }
@@ -200,7 +225,10 @@ public class GameService
 
             // Pay dividends
             if (dividendPercent > 0)
+            {
                 PayDividend(i, dividendPercent);
+                memory.RecordDividend(i, dividendPercent);
+            }
 
             // Move parent peg
             var oldParent = company.ParentPegRow;
@@ -357,6 +385,7 @@ public class GameService
         _game.Companies = Enumerable.Range(0, CompanyCount).Select(i => new Company { Index = i }).ToList();
         _game.Players.Clear();
         _deck.Shuffle();
+        memory.Reset();
     }
 
     public void RematchGame()
@@ -371,5 +400,6 @@ public class GameService
             player.Holdings = new int[CompanyCount];
         }
         _deck.Shuffle();
+        memory.Reset();
     }
 }

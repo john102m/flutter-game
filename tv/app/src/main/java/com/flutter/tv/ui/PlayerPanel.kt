@@ -74,11 +74,15 @@ fun PlayerCard(player: PlayerState, isCurrent: Boolean) {
             .padding(12.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Image(
-                painter = painterResource(avatarResources[player.avatarInt.coerceIn(0, 8)]),
-                contentDescription = null,
-                modifier = Modifier.size(32.dp).clip(CircleShape)
-            )
+            if (player.isAi) {
+                Text(player.emoji ?: "🤖", fontSize = 24.sp, modifier = Modifier.size(32.dp))
+            } else {
+                Image(
+                    painter = painterResource(avatarResources[player.avatarInt.coerceIn(0, 8)]),
+                    contentDescription = null,
+                    modifier = Modifier.size(32.dp).clip(CircleShape)
+                )
+            }
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = player.name,

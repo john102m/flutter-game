@@ -108,7 +108,7 @@
 - Data classes use `Double` fields with `.toInt()` accessors
 
 **No share supply limit:**
-- BuyShares has no cap — physical game has 10 certificates per company. Unlikely to hit in practice but should enforce for authenticity.
+- ~~BuyShares has no cap — physical game has 10 certificates per company.~~ **FIXED** — 10-cert cap enforced server-side.
 
 **Dividend calculation differs from rules:**
 - ~~Rules say dividends are on £100 PAR value. Server was paying percentage of market price.~~ **FIXED** — now uses PAR value.
@@ -128,7 +128,7 @@
 9. ~~**Gradient/glow effects on the active player**~~ ✓
 10. ~~**Serve handset from .NET server**~~ ✓ — `npm run build:deploy` → wwwroot, single `dotnet run` for game night
 11. **Better Lottie confetti** — replace minimal hand-crafted JSON with a proper LottieFiles animation
-12. **Share supply limit** — enforce 10 certificates per company
+12. ~~**Share supply limit**~~ ✓ — 10 certificates per company enforced in BuyShares
 
 ---
 

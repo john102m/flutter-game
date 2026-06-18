@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Flutter.Server.Hubs;
 
-public class GameHub(GameService gameService) : Hub
+public class GameHub(GameService gameService, AiPlayerService aiService, SessionMemory memory) : Hub
 {
     public override async Task OnConnectedAsync()
     {
@@ -16,7 +16,7 @@ public class GameHub(GameService gameService) : Hub
     {
         var game = gameService.CreateGame(Context.ConnectionId, playerName, avatar);
         await Clients.Caller.SendAsync("GameCreated", game.GameCode);
-        await Clients.All.SendAsync("LobbyUpdated", game.Players.Select(p => new { p.Name, p.Avatar }).ToArray());
+        await Clients.All.SendAsync("LobbyUpdated", game.Players.Select(p => new { p.Name, p.Avatar, p.IsAi, p.Emoji }).ToArray());
     }
 
     public async Task JoinGame(string code, string playerName, int avatar)
@@ -29,7 +29,24 @@ public class GameHub(GameService gameService) : Hub
         }
 
         var game = gameService.GetGame()!;
-        await Clients.All.SendAsync("LobbyUpdated", game.Players.Select(p => new { p.Name, p.Avatar }).ToArray());
+        await Clients.All.SendAsync("LobbyUpdated", game.Players.Select(p => new { p.Name, p.Avatar, p.IsAi, p.Emoji }).ToArray());
+    }
+
+    public async Task AddAiPlayer()
+    {
+        var game = gameService.GetGame();
+        if (game is null) return;
+        var host = game.Players.FirstOrDefault(p => p.IsHost);
+        if (host?.ConnectionId != Context.ConnectionId) return;
+
+        var bot = aiService.AddAiPlayer();
+        if (bot is null)
+        {
+            await Clients.Caller.SendAsync("Error", "Cannot add more AI players");
+            return;
+        }
+
+        await Clients.All.SendAsync("LobbyUpdated", game.Players.Select(p => new { p.Name, p.Avatar, p.IsAi, p.Emoji }).ToArray());
     }
 
     public async Task StartGame()
@@ -42,6 +59,7 @@ public class GameHub(GameService gameService) : Hub
 
         await Clients.All.SendAsync("GameStarted");
         await BroadcastTurnState();
+        _ = aiService.ProcessAiTurnIfNeeded();
     }
 
     public async Task GetState()
@@ -74,6 +92,7 @@ public class GameHub(GameService gameService) : Hub
             await Clients.Caller.SendAsync("Error", error);
             return;
         }
+        memory.RecordHumanTrade(company, true);
         var game = gameService.GetGame()!;
         var player = game.Players.First(p => p.ConnectionId == Context.ConnectionId);
         var price = GameState.PriceForRow(game.Companies[company].ParentPegRow);
@@ -89,6 +108,7 @@ public class GameHub(GameService gameService) : Hub
             await Clients.Caller.SendAsync("Error", error);
             return;
         }
+        memory.RecordHumanTrade(company, false);
         var game = gameService.GetGame()!;
         var player = game.Players.First(p => p.ConnectionId == Context.ConnectionId);
         var price = GameState.PriceForRow(game.Companies[company].ParentPegRow);
@@ -122,6 +142,7 @@ public class GameHub(GameService gameService) : Hub
         }
 
         await BroadcastTurnState();
+        _ = aiService.ProcessAiTurnIfNeeded();
     }
 
     public async Task DebugGameOver()
@@ -173,6 +194,7 @@ public class GameHub(GameService gameService) : Hub
     private async Task BroadcastTurnState()
     {
         var game = gameService.GetGame()!;
+        gameService.MarkTurnStarted();
         var state = new
         {
             CurrentPlayer = game.CurrentPlayer.Name,
@@ -181,7 +203,9 @@ public class GameHub(GameService gameService) : Hub
                 p.Name,
                 p.Avatar,
                 Cash = p.Cash,
-                Holdings = p.Holdings
+                Holdings = p.Holdings,
+                p.IsAi,
+                p.Emoji
             }).ToArray(),
             Companies = game.Companies.Select(c => new
             {
