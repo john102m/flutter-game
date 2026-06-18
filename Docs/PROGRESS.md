@@ -116,13 +116,13 @@
 7. ~~**Canvas-based particle sparkles on dividends**~~ ✓
 8. ~~**Spring animations on peg movement**~~ reverted — too much
 9. ~~**Gradient/glow effects on the active player**~~ ✓
-10. **Serve handset from .NET server** — `npm run build` → static files middleware, single process for game night
+10. ~~**Serve handset from .NET server**~~ ✓ — `npm run build:deploy` → wwwroot, single `dotnet run` for game night
 11. **Better Lottie confetti** — replace minimal hand-crafted JSON with a proper LottieFiles animation
 12. **Share supply limit** — enforce 10 certificates per company
 
 ---
 
-*Updated: 2026-06-17*
+*Updated: 2026-06-18*
 
 ## 2026-06-16 Session
 
