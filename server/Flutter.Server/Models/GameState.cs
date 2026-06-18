@@ -2,6 +2,8 @@ namespace Flutter.Server.Models;
 
 public enum GamePhase { Lobby, Playing, RoundEnd, GameOver }
 
+public enum BotPersonality { Aggressive, Cautious, Chaotic }
+
 public class Player
 {
     public string ConnectionId { get; set; } = "";
@@ -10,6 +12,9 @@ public class Player
     public bool IsHost { get; set; }
     public int Avatar { get; set; }
     public int[] Holdings { get; set; } = new int[6]; // certificates per company
+    public bool IsAi { get; set; }
+    public BotPersonality? Personality { get; set; }
+    public string? Emoji { get; set; }
 }
 
 public class Company

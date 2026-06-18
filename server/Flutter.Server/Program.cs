@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.SignalR;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<GameService>();
+builder.Services.AddSingleton<SessionMemory>();
+builder.Services.AddSingleton<AiPlayerService>();
 builder.Services.AddSignalR();
 builder.Services.AddCors(options =>
 {

@@ -17,7 +17,9 @@ data class PlayerState(
     val name: String = "",
     val cash: Double = 0.0,
     val holdings: List<Double> = emptyList(),
-    val avatar: Double = 0.0
+    val avatar: Double = 0.0,
+    val isAi: Boolean = false,
+    val emoji: String? = null
 ) {
     val cashInt get() = cash.toInt()
     val holdingsInt get() = holdings.map { it.toInt() }
