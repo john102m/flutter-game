@@ -22,7 +22,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.flutter.tv.ui.theme.FlutterTvTheme
 
-data class CompanyDef(val name: String, val color: Color)
+data class CompanyDef(val name: String, val color: Color) {
+    val pegColor: Color get() = if (color == Color(0xFFFFD600)) Color(0xFFFFC107) else color
+}
 
 val companyDefs = listOf(
     CompanyDef("Aramco", Color(0xFF1565C0)),
@@ -148,7 +150,7 @@ fun GameBoard(animatedTravellers: List<Int>, animatedParents: List<Int>, bankrup
                                 Box(
                                     modifier = Modifier
                                         .size(18.dp)
-                                        .background(companyDef.color, CircleShape)
+                                        .background(companyDef.pegColor, CircleShape)
                                         .border(2.dp, Color.White, CircleShape)
                                 )
                             }
@@ -156,7 +158,7 @@ fun GameBoard(animatedTravellers: List<Int>, animatedParents: List<Int>, bankrup
                                 Box(
                                     modifier = Modifier
                                         .size(18.dp)
-                                        .background(companyDef.color, CircleShape)
+                                        .background(companyDef.pegColor, CircleShape)
                                         .border(2.dp, Color.White, CircleShape)
                                 )
                             }
@@ -164,7 +166,7 @@ fun GameBoard(animatedTravellers: List<Int>, animatedParents: List<Int>, bankrup
                                 Box(
                                     modifier = Modifier
                                         .size(12.dp)
-                                        .background(companyDef.color, CircleShape)
+                                        .background(companyDef.pegColor, CircleShape)
                                         .border(2.dp, Color.White, CircleShape)
                                 )
                             }

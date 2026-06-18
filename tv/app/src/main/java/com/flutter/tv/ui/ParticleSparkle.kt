@@ -1,57 +1,41 @@
 package com.flutter.tv.ui
 
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import kotlin.math.*
-import kotlin.random.Random
-
-private data class Particle(
-    val x: Float, val y: Float,
-    val angle: Float, val speed: Float,
-    val size: Float, val color: Color,
-    val delay: Float
-)
+import nl.dionsegijn.konfetti.compose.KonfettiView
+import nl.dionsegijn.konfetti.core.Angle
+import nl.dionsegijn.konfetti.core.Party
+import nl.dionsegijn.konfetti.core.Position
+import nl.dionsegijn.konfetti.core.Spread
+import nl.dionsegijn.konfetti.core.emitter.Emitter
+import nl.dionsegijn.konfetti.core.models.Shape
+import nl.dionsegijn.konfetti.core.models.Size
+import java.util.concurrent.TimeUnit
 
 @Composable
 fun ParticleSparkle(modifier: Modifier = Modifier) {
-    val particles = remember {
-        val colors = listOf(Color(0xFFFFD700), Color(0xFFFFA000), Color(0xFFFFEB3B), Color(0xFFFFFFFF))
-        List(40) {
-            Particle(
-                x = 0.5f + Random.nextFloat() * 0.4f - 0.2f,
-                y = 0.5f + Random.nextFloat() * 0.4f - 0.2f,
-                angle = Random.nextFloat() * 2f * PI.toFloat(),
-                speed = 0.1f + Random.nextFloat() * 0.25f,
-                size = 2f + Random.nextFloat() * 4f,
-                color = colors.random(),
-                delay = Random.nextFloat()
+    val parties = remember {
+        listOf(
+            Party(
+                speed = 0f,
+                maxSpeed = 20f,
+                damping = 0.9f,
+                angle = Angle.TOP,
+                spread = Spread.ROUND,
+                size = listOf(Size.SMALL, Size.LARGE),
+                shapes = listOf(Shape.Square, Shape.Circle),
+                colors = listOf(0xFFD700, 0xFFA000, 0xFFEB3B, 0x4CAF50),
+                timeToLive = 2000L,
+                emitter = Emitter(duration = 100, TimeUnit.MILLISECONDS).max(50),
+                position = Position.Relative(0.5, 0.5)
             )
-        }
+        )
     }
 
-    val time by rememberInfiniteTransition(label = "sparkle").animateFloat(
-        initialValue = 0f, targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(1500, easing = LinearEasing)),
-        label = "t"
+    KonfettiView(
+        modifier = modifier.fillMaxSize(),
+        parties = parties
     )
-
-    Canvas(modifier = modifier.fillMaxSize()) {
-        particles.forEach { p ->
-            val t = ((time + p.delay) % 1f)
-            val alpha = 1f - t
-            val dist = t * p.speed * size.minDimension
-            val cx = p.x * size.width + cos(p.angle) * dist
-            val cy = p.y * size.height + sin(p.angle) * dist
-            drawCircle(
-                color = p.color.copy(alpha = alpha * 0.8f),
-                radius = p.size * (1f - t * 0.5f),
-                center = Offset(cx, cy)
-            )
-        }
-    }
 }

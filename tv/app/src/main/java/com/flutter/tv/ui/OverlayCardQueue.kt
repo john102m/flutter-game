@@ -84,10 +84,11 @@ fun OverlayCardQueue(
                         if (card.subtitle.isNotEmpty()) {
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = card.subtitle,
-                                color = Color.DarkGray,
+                                text = " ${card.subtitle} ",
+                                color = Color.White,
                                 fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.background(card.borderColor, RoundedCornerShape(4.dp))
                             )
                         }
                         Spacer(modifier = Modifier.height(12.dp))

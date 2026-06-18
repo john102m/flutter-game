@@ -108,12 +108,16 @@ public class GameHub(GameService gameService) : Hub
         await Clients.All.SendAsync("DiceRolled", result.ColourDie, result.NumberDie,
             result.Effect?.Type ?? "", result.Effect?.CardText ?? "", CompanyName(result.ColourDie), result.LandedRow);
 
-        if (result.RoundEnd != null)
+        if (result.Winner != null)
+        {
+            await Clients.All.SendAsync("GameOver", result.Winner, result.WinnerCapital, result.WinReason);
+        }
+        else if (result.RoundEnd != null)
         {
             await Clients.All.SendAsync("RoundEnd", result.RoundEnd);
             if (result.RoundEnd.Winner != null)
             {
-                await Clients.All.SendAsync("GameOver", result.RoundEnd.Winner, result.RoundEnd.WinnerCapital);
+                await Clients.All.SendAsync("GameOver", result.RoundEnd.Winner, result.RoundEnd.WinnerCapital, result.RoundEnd.WinReason);
             }
         }
 
@@ -127,7 +131,7 @@ public class GameHub(GameService gameService) : Hub
 
         var winner = game.Players[0];
         var capital = gameService.DebugForceGameOver();
-        await Clients.All.SendAsync("GameOver", winner.Name, capital);
+        await Clients.All.SendAsync("GameOver", winner.Name, capital, "Debug");
     }
 
     public async Task DebugBankruptcy(int company)

@@ -112,7 +112,7 @@ export function GameScreen({ connection, playerName, isHost }: Props) {
     connection.on("DiceRolled", (colour: number, num: number, effectType: string, cardText: string, _companyName: string) => {
       setAnimating(true);
       setTimeout(() => setLastRoll({ colour, number: num, effect: effectType || undefined, cardText: cardText || undefined }), 3000);
-      setTimeout(() => { if (!roundEndRef.current) setAnimating(false); }, effectType ? 5000 : 3000);
+      setTimeout(() => { if (!roundEndRef.current) setAnimating(false); }, effectType ? 7000 : 5000);
     });
     connection.on("Error", (msg: string) => {
       setError(msg);
@@ -151,7 +151,7 @@ export function GameScreen({ connection, playerName, isHost }: Props) {
       {/* Turn indicator */}
       <div className={`text-center py-1 rounded font-bold text-lg flex items-center justify-center gap-2 relative ${isMyTurn ? "bg-green-700" : "bg-gray-700"}`}>
         <img src={`/avatars/avatar_${me?.avatar ?? 0}.png`} className="w-7 h-7 rounded-full" />
-        {isMyTurn ? `Your Turn,  ${me?.name}` : `Waiting for ${turnState.currentPlayer}`}
+        {isMyTurn ? `Your Turn ${me?.name}` : `Waiting for ${turnState.currentPlayer}`}
         {isHost && (
           <button
             onClick={() => setShowRestart(true)}
@@ -278,7 +278,7 @@ export function GameScreen({ connection, playerName, isHost }: Props) {
       )}
 
       {/* Debug */}
-      {/* {import.meta.env.DEV && (
+      {import.meta.env.DEV && (
         <div className="absolute top-1 right-1 flex gap-1">
           <button
             onClick={() => connection.invoke("DebugBankruptcy", 0)}
@@ -293,7 +293,7 @@ export function GameScreen({ connection, playerName, isHost }: Props) {
             DBG:GameOver
           </button>
         </div>
-      )} */}
+      )}
     </div>
   );
 }
