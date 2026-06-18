@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Rising chart line -->
+    <path
+        android:pathData="M28,76 L40,70 L52,72 L64,60 L76,50 L88,38"
+        android:strokeColor="#4CAF50"
+        android:strokeWidth="4"
+        android:fillColor="@android:color/transparent"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- Arrow head on chart -->
+    <path
+        android:pathData="M83,42 L88,38 L84,44"
+        android:strokeColor="#4CAF50"
+        android:strokeWidth="3"
+        android:fillColor="@android:color/transparent"
+        android:strokeLineCap="round" />
+
+    <!-- Pound sign -->
+    <path
+        android:pathData="M48,44 Q54,36 60,42 M46,50 L62,50 M44,58 Q52,64 64,60"
+        android:strokeColor="#FFD700"
+        android:strokeWidth="3"
+        android:fillColor="@android:color/transparent"
+        android:strokeLineCap="round" />
+
+</vector>

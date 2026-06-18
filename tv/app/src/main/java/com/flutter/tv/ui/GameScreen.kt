@@ -93,6 +93,7 @@ fun GameScreen() {
                     if (i == idx) c.copy(travellerPegRow = row.toDouble()) else c
                 }
                 gameStateHolder.update(currentState.copy(companies = updatedCompanies))
+                SoundManager.playTick()
                 pendingLandedRow = null
             }
             // Pause so the peg position is visible before next overlay

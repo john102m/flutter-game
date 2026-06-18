@@ -12,6 +12,7 @@ object SoundManager {
     private var dividendChaChing = 0
     private var roundFanfare = 0
     private var victory = 0
+    private var tick = 0
 
     fun init(context: Context) {
         val attrs = AudioAttributes.Builder()
@@ -25,6 +26,7 @@ object SoundManager {
         dividendChaChing = pool.load(context, R.raw.dividend_chaching, 1)
         roundFanfare = pool.load(context, R.raw.round_fanfare, 1)
         victory = pool.load(context, R.raw.victory, 1)
+        tick = pool.load(context, R.raw.tick, 1)
     }
 
     fun playDice() = pool.play(diceRattle, 1f, 1f, 1, 0, 1f)
@@ -33,6 +35,7 @@ object SoundManager {
     fun playDividend() = pool.play(dividendChaChing, 1f, 1f, 1, 0, 1f)
     fun playRoundEnd() = pool.play(roundFanfare, 1f, 1f, 1, 0, 1f)
     fun playVictory() = pool.play(victory, 1f, 1f, 1, 0, 1f)
+    fun playTick() = pool.play(tick, 0.5f, 0.5f, 1, 0, 1f)
 }
 
 
