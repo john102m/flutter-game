@@ -4,3 +4,14 @@ html, body {
   overflow: hidden;
   height: 100%;
 }
+
+@keyframes ticker-scroll {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+.animate-ticker {
+  white-space: nowrap;
+  display: inline-block;
+  animation: ticker-scroll 6s linear infinite;
+}

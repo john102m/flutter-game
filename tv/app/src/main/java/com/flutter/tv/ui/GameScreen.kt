@@ -75,6 +75,21 @@ fun GameScreen() {
     var pendingGameOver by remember { mutableStateOf<Triple<String, Int, List<OverlayCard>>?>(null) }
     var winnerRevealPending by remember { mutableStateOf<Pair<String, Int>?>(null) }
 
+    // Ticker state
+    var lastTrade by remember { mutableStateOf<TickerTrade?>(null) }
+
+    // Ticker: track previous prices for direction arrows
+    // previousPrices holds the prices BEFORE the last change — arrows compare against this
+    var previousPrices by remember { mutableStateOf(List(6) { 100 }) }
+    var snapshotPrices by remember { mutableStateOf(List(6) { 100 }) } // what we last saw
+    val currentPrices = if (state.companies.size == 6) state.companies.map { it.price.toInt() / 100 } else List(6) { 100 }
+
+    if (currentPrices != snapshotPrices) {
+        // Prices changed — save what we had as "previous" so arrows show the move
+        previousPrices = snapshotPrices
+        snapshotPrices = currentPrices
+    }
+
     // ─── ANIMATION SEQUENCING ───────────────────────────────────────────────────
 
     // When card shows, play sound, wait 2.5s then fade out and apply pending state
@@ -89,7 +104,7 @@ fun GameScreen() {
                 delay(500)
                 SoundManager.playDividend()
             }
-            delay(2500)
+            delay(4500)
             showCard = false
             pendingState?.let { gameStateHolder.update(it) }
             pendingState = null
@@ -170,8 +185,8 @@ fun GameScreen() {
         withContext(Dispatchers.IO) {
             val gson = Gson()
             val connection = HubConnectionBuilder
-                //.create("https://flutter.spooch.co.uk/gamehub")
-                .create("http://192.168.1.177:5000/gamehub")
+                .create("https://flutter.spooch.co.uk/gamehub")
+                //.create("http://192.168.1.177:5000/gamehub")
                 .build()
 
             connection.on("TurnState", { raw: Any ->
@@ -207,7 +222,7 @@ fun GameScreen() {
                 diceVisible = true
 
                 val banner = when (effectType) {
-                    "Slump" -> "📉 SLUMP! Dropped back 6"
+                    "Slump" -> "📉 $cardText"
                     "AntiSlump" -> "🛡️ Anti-Slump! Protected"
                     "MarketNews" -> cardText
                     else -> ""
@@ -232,6 +247,7 @@ fun GameScreen() {
                 val companyStr = company.toString()
                 val companyIdx = companyDefs.indexOfFirst { it.name == companyStr }.coerceAtLeast(0)
                 Log.d(TAG, "TradeExecuted: $name $verb $companyStr @ £$pricePounds")
+                lastTrade = TickerTrade(name.toString(), action.toString(), companyStr)
                 SoundManager.playCard()
                 overlayCards = listOf(OverlayCard(
                     title = "TRADE",
@@ -256,13 +272,16 @@ fun GameScreen() {
                         val idx = c.companyIndex.toInt()
                         val div = c.dividendPercent.toInt()
                         val move = c.parentMove.toInt()
-                        val arrow = when { move > 0 -> "↑$move"; move < 0 -> "↓${-move}"; else -> "—" }
+                        val arrow = when { move > 0 -> "▲ +£${move * 10}"; move < 0 -> "▼ -£${-move * 10}"; else -> "—" }
                         val divText = if (div > 0) "$div% dividend" else "No dividend"
                         val bonus = if (c.bonusShares) "\n🎉 BONUS SHARES! 1-for-1" else ""
                         val bankruptText = if (c.bankrupt) "\n💀 BANKRUPT! Company removed" else ""
+                        val arrowColor = when { move > 0 -> Color(0xFF4CAF50); move < 0 -> Color(0xFFE53935); else -> Color.Black }
                         cards.add(OverlayCard(
                             title = companyNames[idx],
-                            body = "$divText  •  Share price $arrow$bonus$bankruptText",
+                            body = "$divText$bonus$bankruptText",
+                            secondaryText = arrow,
+                            secondaryColor = arrowColor,
                             borderColor = if (c.bankrupt) Color(0xFFC62828) else companyDefs[idx].color,
                             holdMs = if (c.bonusShares || c.bankrupt) 3000 else 2000
                         ))
@@ -302,6 +321,9 @@ fun GameScreen() {
                 gameOverCapital = 0
                 pendingGameOver = null
                 winnerRevealPending = null
+                lastTrade = null
+                previousPrices = List(6) { 100 }
+                snapshotPrices = List(6) { 100 }
             })
 
             connection.on("GameRematch", { _: Any ->
@@ -310,6 +332,9 @@ fun GameScreen() {
                 gameOverCapital = 0
                 pendingGameOver = null
                 winnerRevealPending = null
+                lastTrade = null
+                previousPrices = List(6) { 100 }
+                snapshotPrices = List(6) { 100 }
             }, Any::class.java)
 
             connection.on("Bankruptcy", { company: Any ->
@@ -354,36 +379,46 @@ fun GameScreen() {
                 )
             )
     ) {
-        Row(modifier = Modifier.fillMaxSize()) {
-            val leftPlayers = state.players.take((state.players.size + 1) / 2)
-            val rightPlayers = state.players.drop((state.players.size + 1) / 2)
+        Column(modifier = Modifier.fillMaxSize()) {
+            Row(modifier = Modifier.weight(1f)) {
+                val leftPlayers = state.players.take((state.players.size + 1) / 2)
+                val rightPlayers = state.players.drop((state.players.size + 1) / 2)
 
-            PlayerPanel(
-                players = leftPlayers,
-                currentPlayer = state.currentPlayer,
-                modifier = Modifier.weight(1f)
-            )
+                PlayerPanel(
+                    players = leftPlayers,
+                    currentPlayer = state.currentPlayer,
+                    modifier = Modifier.weight(1f)
+                )
 
-            GameBoard(
-                animatedTravellers = travellers,
-                animatedParents = parents,
-                bankrupt = bankrupt,
-                modifier = Modifier.weight(2f)
-            )
+                GameBoard(
+                    animatedTravellers = travellers,
+                    animatedParents = parents,
+                    bankrupt = bankrupt,
+                    modifier = Modifier.weight(2f).padding(top = 2.dp, bottom = 1.dp)
+                )
 
-            PlayerPanel(
-                players = rightPlayers,
-                currentPlayer = state.currentPlayer,
-                modifier = Modifier.weight(1f)
+                PlayerPanel(
+                    players = rightPlayers,
+                    currentPlayer = state.currentPlayer,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            // Stock ticker bar — below the board
+            StockTicker(
+                companies = state.companies,
+                previousPrices = previousPrices,
+                players = state.players,
+                lastTrade = lastTrade
             )
         }
 
-        // Anti-slump badges — bottom left
+        // Anti-slump badges — bottom left, above ticker
         val antiSlumpCompanies = state.companies.filter { it.hasAntiSlump }
         if (antiSlumpCompanies.isNotEmpty()) {
             val companyNames = listOf("Aramco", "Exxon", "Shell", "Chevron", "Esso", "BP")
             Box(
-                modifier = Modifier.fillMaxSize().padding(12.dp),
+                modifier = Modifier.fillMaxSize().padding(start = 12.dp, bottom = 40.dp),
                 contentAlignment = Alignment.BottomStart
             ) {
                 Column {
@@ -446,14 +481,14 @@ fun GameScreen() {
                         Text(
                             text = "MARKET NEWS",
                             color = Color(0xFFffd700),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.ExtraBold
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             text = " ${effectCompany} ",
                             color = Color.White,
-                            fontSize = 16.sp,
+                            fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.background(companyDefs[diceColour].color, RoundedCornerShape(4.dp))
                         )
@@ -461,7 +496,8 @@ fun GameScreen() {
                         Text(
                             text = effectBanner,
                             color = Color.Black,
-                            fontSize = 18.sp,
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center
                         )
                     }

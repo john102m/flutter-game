@@ -13,6 +13,8 @@ public class GameService(SessionMemory memory)
     private const int CompanyCount = 6;
     private const int MaxCertificatesPerCompany = 10;
 
+    private static readonly string[] CompanyNames = ["Aramco", "Exxon", "Shell", "Chevron", "Esso", "BP"];
+
     // Money (in pence)
     private const int Brokerage = 500;
     private const int ParPrice = 10000; // £100 PAR value
@@ -160,7 +162,8 @@ public class GameService(SessionMemory memory)
             {
                 var before = company.TravellerPegRow;
                 company.TravellerPegRow = Math.Min(company.TravellerPegRow + SlumpDrop, company.ParentPegRow);
-                effect = new BoardEffect("Slump");
+                var headline = SlumpHeadlines.GetHeadline(CompanyNames[colourDie]);
+                effect = new BoardEffect("Slump", headline);
                 memory.RecordSlump(colourDie);
                 Console.WriteLine($"[SLUMP] Company {colourDie} dropped from row {before} to {company.TravellerPegRow}");
             }
@@ -168,11 +171,13 @@ public class GameService(SessionMemory memory)
         else if (company.TravellerPegRow == MarketNewsRow)
         {
             var card = _deck.Draw();
+            var companyName = CompanyNames[colourDie];
+            var headline = NewsHeadlines.GetHeadline(card.Effect, companyName);
             var displayText = card.Effect switch
             {
-                CardEffect.ParentPegUp => $"{card.Text}\n📈 Share price up £{card.Value * 10}!",
-                CardEffect.ParentPegDown => $"{card.Text}\n📉 Share price down £{card.Value * 10}!",
-                _ => card.Text
+                CardEffect.ParentPegUp => $"{headline}\n📈 Share price up £{card.Value * 10}!",
+                CardEffect.ParentPegDown => $"{headline}\n📉 Share price down £{card.Value * 10}!",
+                _ => headline
             };
             effect = new BoardEffect("MarketNews", displayText, card.Id);
             Console.WriteLine($"[M] Company {colourDie} drew card #{card.Id}: {card.Text} ({card.Effect} {card.Value})");

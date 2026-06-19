@@ -1,0 +1,13 @@
+idle handset timeout screen goes dark -> signalR disconnect? but button says ROLL. but you need to refresh the browser
+
+Slump Cards are a tad unimaginative?
+
+Share price up or down on the final calc screens change from black arrows to the coloured ones
+
+Anti slump badge is over the ticker at bottom of tv screen - nudge it up a bit
+
+Close the browser by accident = no way to rejoin?
+
+Market news is on one line on the handset can it be scrolled horizontally  after a 2s delay - similar to the TV ticker.
+
+Text on Market news cards  make more bold , slightly larger?

@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 
 private val COMPANY_COLOURS = listOf(
-    Color(0xFF1565C0), // Saudi Aramco
+    Color(0xFF0D47A1), // Saudi Aramco
     Color(0xFFE53935), // ExxonMobil
     Color(0xFF43A047), // Shell
     Color(0xFF1E88E5), // Chevron

@@ -142,7 +142,15 @@ public class GameHub(GameService gameService, AiPlayerService aiService, Session
         }
 
         await BroadcastTurnState();
-        _ = aiService.ProcessAiTurnIfNeeded();
+        if (result.RoundEnd != null)
+        {
+            var cardCount = result.RoundEnd.Companies.Length + 1 + (result.RoundEnd.Winner != null ? 1 : 0);
+            _ = Task.Delay(cardCount * 2500 + 3000).ContinueWith(_ => aiService.ProcessAiTurnIfNeeded());
+        }
+        else
+        {
+            _ = aiService.ProcessAiTurnIfNeeded();
+        }
     }
 
     public async Task DebugGameOver()

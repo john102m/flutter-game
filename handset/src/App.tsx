@@ -7,13 +7,13 @@ import { GameScreen } from "./components/GameScreen";
 export type Phase = "connect" | "lobby" | "playing" | "gameOver";
 
 function App() {
-  const connection = useConnection();
-  const [phase, setPhase] = useState<Phase>(() => (sessionStorage.getItem("phase") as Phase) || "connect");
-  const [gameCode, setGameCode] = useState(() => sessionStorage.getItem("gameCode") || "");
+  const { connection, status } = useConnection();
+  const [phase, setPhase] = useState<Phase>(() => (localStorage.getItem("flutter_phase") as Phase) || "connect");
+  const [gameCode, setGameCode] = useState(() => localStorage.getItem("flutter_gameCode") || "");
   const [players, setPlayers] = useState<{ name: string; avatar: number }[]>([]);
-  const [isHost, setIsHost] = useState(() => sessionStorage.getItem("isHost") === "true");
+  const [isHost, setIsHost] = useState(() => localStorage.getItem("flutter_isHost") === "true");
   const [error, setError] = useState("");
-  const [playerName, setPlayerName] = useState(() => sessionStorage.getItem("playerName") || "");
+  const [playerName, setPlayerName] = useState(() => localStorage.getItem("flutter_playerName") || "");
   const [gameOverInfo, setGameOverInfo] = useState<{ winner: string; capital: number } | null>(null);
   const joinedRef = useRef(false);
 
@@ -24,28 +24,28 @@ function App() {
       setGameCode(code);
       setIsHost(true);
       setPhase("lobby");
-      sessionStorage.setItem("gameCode", code);
-      sessionStorage.setItem("isHost", "true");
-      sessionStorage.setItem("phase", "lobby");
+      localStorage.setItem("flutter_gameCode", code);
+      localStorage.setItem("flutter_isHost", "true");
+      localStorage.setItem("flutter_phase", "lobby");
     });
 
     connection.on("LobbyUpdated", (playerList: { name: string; avatar: number }[]) => {
       setPlayers(playerList);
       if (joinedRef.current) {
         setPhase("lobby");
-        sessionStorage.setItem("phase", "lobby");
+        localStorage.setItem("flutter_phase", "lobby");
       }
     });
 
     connection.on("GameStarted", () => {
       setPhase("playing");
-      sessionStorage.setItem("phase", "playing");
+      localStorage.setItem("flutter_phase", "playing");
     });
 
     connection.on("Rejoined", (serverPhase: string) => {
       const p = serverPhase === "playing" ? "playing" : "lobby";
       setPhase(p);
-      sessionStorage.setItem("phase", p);
+      localStorage.setItem("flutter_phase", p);
     });
 
     connection.on("Error", (msg: string) => {
@@ -53,42 +53,42 @@ function App() {
       // If rejoin failed, reset to connect screen
       if (msg === "Could not rejoin") {
         setPhase("connect");
-        sessionStorage.removeItem("phase");
-        sessionStorage.removeItem("gameCode");
-        sessionStorage.removeItem("isHost");
+        localStorage.removeItem("flutter_phase");
+        localStorage.removeItem("flutter_gameCode");
+        localStorage.removeItem("flutter_isHost");
       }
     });
 
     connection.on("GameOver", (winner: string, capital: number) => {
       setGameOverInfo({ winner, capital });
       setPhase("gameOver");
-      sessionStorage.setItem("phase", "gameOver");
+      localStorage.setItem("flutter_phase", "gameOver");
     });
 
     connection.on("GameReset", () => {
       setPhase("connect");
       setGameOverInfo(null);
-      sessionStorage.removeItem("phase");
-      sessionStorage.removeItem("gameCode");
-      sessionStorage.removeItem("isHost");
+      localStorage.removeItem("flutter_phase");
+      localStorage.removeItem("flutter_gameCode");
+      localStorage.removeItem("flutter_isHost");
     });
 
     connection.on("GameRematch", (playerList: { name: string; avatar: number }[]) => {
       setPlayers(playerList);
       setPhase("lobby");
       setGameOverInfo(null);
-      sessionStorage.setItem("phase", "lobby");
+      localStorage.setItem("flutter_phase", "lobby");
     });
 
     // Auto-rejoin if we have a stored session
-    const storedName = sessionStorage.getItem("playerName");
-    const storedPhase = sessionStorage.getItem("phase");
+    const storedName = localStorage.getItem("flutter_playerName");
+    const storedPhase = localStorage.getItem("flutter_phase");
     if (storedName && storedPhase && storedPhase !== "connect") {
       connection.invoke("Rejoin", storedName).catch(() => {
         setPhase("connect");
-        sessionStorage.removeItem("phase");
-        sessionStorage.removeItem("gameCode");
-        sessionStorage.removeItem("isHost");
+        localStorage.removeItem("flutter_phase");
+        localStorage.removeItem("flutter_gameCode");
+        localStorage.removeItem("flutter_isHost");
       });
     }
 
@@ -98,11 +98,11 @@ function App() {
       if (args[0] === "JoinGame") {
         joinedRef.current = true;
         setPlayerName(args[2] as string);
-        sessionStorage.setItem("playerName", args[2] as string);
+        localStorage.setItem("flutter_playerName", args[2] as string);
       }
       if (args[0] === "CreateGame") {
         setPlayerName(args[1] as string);
-        sessionStorage.setItem("playerName", args[1] as string);
+        localStorage.setItem("flutter_playerName", args[1] as string);
       }
       return originalInvoke(...args);
     };
@@ -123,13 +123,26 @@ function App() {
     return <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">Connecting...</div>;
   }
 
+  const reconnecting = status === "reconnecting" || status === "disconnected";
+
+  const reconnectingOverlay = reconnecting && (
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100]">
+      <div className="text-center">
+        <div className="text-2xl mb-2">📡</div>
+        <div className="text-white font-bold">{status === "disconnected" ? "Connection lost" : "Reconnecting..."}</div>
+        <div className="text-gray-400 text-sm mt-1">Please wait</div>
+      </div>
+    </div>
+  );
+
   switch (phase) {
     case "lobby":
-      return <LobbyScreen connection={connection} gameCode={gameCode} players={players} isHost={isHost} />;
+      return <>{reconnectingOverlay}<LobbyScreen connection={connection} gameCode={gameCode} players={players} isHost={isHost} /></>;
     case "playing":
-      return <GameScreen connection={connection} playerName={playerName} isHost={isHost} />;
+      return <>{reconnectingOverlay}<GameScreen connection={connection} playerName={playerName} isHost={isHost} /></>;
     case "gameOver":
       return (
+        <>{reconnectingOverlay}
         <div className="h-screen bg-gray-900 text-white flex flex-col items-center justify-center gap-4 p-6">
           <div className="text-6xl">🏆</div>
           <div className="text-3xl font-bold text-amber-400">GAME OVER</div>
@@ -148,9 +161,10 @@ function App() {
             New Game
           </button>
         </div>
+        </>
       );
     default:
-      return <ConnectScreen connection={connection} error={error} />;
+      return <>{reconnectingOverlay}<ConnectScreen connection={connection} error={error} /></>;
   }
 }
 
