@@ -19,11 +19,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import com.flutter.tv.SoundManager
 
 data class OverlayCard(
     val title: String,
     val subtitle: String = "",
     val body: String,
+    val secondaryText: String = "",
+    val secondaryColor: Color = Color.Black,
     val borderColor: Color = Color(0xFFffd700),
     val holdMs: Long = 2000
 )
@@ -42,6 +45,9 @@ fun OverlayCardQueue(
         for (i in cards.indices) {
             currentIndex = i
             visible = true
+            if (cards[i].body.contains("dividend", ignoreCase = true) && cards[i].body.contains("%")) {
+                SoundManager.playDividend()
+            }
             delay(cards[i].holdMs)
             visible = false
             delay(400) // fade out duration
@@ -99,6 +105,16 @@ fun OverlayCardQueue(
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center
                         )
+                        if (card.secondaryText.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = card.secondaryText,
+                                color = card.secondaryColor,
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
             }

@@ -1,8 +1,9 @@
 import { HubConnection } from "@microsoft/signalr";
 import { useEffect, useRef, useState } from "react";
-
-const COMPANIES = ["Aramco", "Exxon", "Shell", "Chevron", "Esso", "BP"];
-const COMPANY_COLOURS = ["#1565C0", "#E53935", "#43A047", "#1E88E5", "#FFD600", "#FF8C00"];
+import { COMPANIES, COMPANY_COLOURS } from "./constants";
+import { DividendModal, RoundEndResult } from "./DividendModal";
+import { CompanyRow } from "./CompanyRow";
+import { RestartModal } from "./RestartModal";
 
 interface CompanyState {
   index: number;
@@ -25,68 +26,6 @@ interface TurnState {
   currentPlayer: string;
   players: PlayerState[];
   companies: CompanyState[];
-}
-
-
-interface CompanyRoundResult {
-  companyIndex: number;
-  dividendPercent: number;
-  parentMove: number;
-  bonusShares?: boolean;
-  bankrupt?: boolean;
-}
-
-interface RoundEndResult {
-  companies: CompanyRoundResult[];
-  winner?: string;
-  winnerCapital: number;
-}
-
-function DividendModal({ result, holdings, onDismiss }: { result: RoundEndResult; holdings: number[]; onDismiss: () => void }) {
-  let total = 0;
-  const lines = result.companies
-    .filter(c => holdings[c.companyIndex] > 0 && c.dividendPercent > 0)
-    .map(c => {
-      const earned = holdings[c.companyIndex] * c.dividendPercent; // £ per cert = percent of £100 par
-      total += earned;
-      return { name: COMPANIES[c.companyIndex], colour: COMPANY_COLOURS[c.companyIndex], earned };
-    });
-
-  return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="rounded-xl p-5 max-w-sm w-full bg-gray-800 border-2 border-amber-500">
-        <div className="text-center text-lg font-bold mb-3 text-amber-400">Round End — Dividends</div>
-        {lines.length === 0 ? (
-          <div className="text-center text-gray-400 mb-3">No dividends earned</div>
-        ) : (
-          <div className="space-y-1 mb-3">
-            {lines.map(l => (
-              <div key={l.name} className="flex justify-between">
-                <span style={{ color: l.colour }}>{l.name}</span>
-                <span className="text-white">+£{l.earned}</span>
-              </div>
-            ))}
-            <div className="border-t border-gray-600 pt-1 flex justify-between font-bold">
-              <span>Total</span>
-              <span className="text-green-400">+£{total}</span>
-            </div>
-          </div>
-        )}
-        {result.winner && (
-          <div className="text-center text-yellow-300 font-bold mb-3">🏆 {result.winner} wins with £{Math.floor(result.winnerCapital / 100)}!</div>
-        )}
-        {result.companies.filter(c => c.bonusShares && holdings[c.companyIndex] > 0).map(c => (
-          <div key={c.companyIndex} className="text-center text-pink-300 font-bold mb-2">🎉 {COMPANIES[c.companyIndex]} bonus shares! You now hold {holdings[c.companyIndex] * 2}</div>
-        ))}
-        {result.companies.filter(c => c.bankrupt).map(c => (
-          <div key={c.companyIndex} className="text-center text-red-400 font-bold mb-2">💀 {COMPANIES[c.companyIndex]} is bankrupt!</div>
-        ))}
-        <div className="text-center">
-          <button onClick={onDismiss} className="bg-white text-gray-900 font-bold px-6 py-2 rounded-lg">OK</button>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 interface Props {
@@ -137,8 +76,14 @@ export function GameScreen({ connection, playerName, isHost }: Props) {
     };
   }, [connection]);
 
+  const prevPlayer = useRef(turnState?.currentPlayer);
+  const prevAnimating = useRef(animating);
   useEffect(() => {
-    if (turnState?.currentPlayer === playerName && !animating) navigator.vibrate?.(100);
+    const myTurn = turnState?.currentPlayer === playerName && !animating;
+    const wasMyTurn = prevPlayer.current === playerName && !prevAnimating.current;
+    if (myTurn && !wasMyTurn) navigator.vibrate?.(100);
+    prevPlayer.current = turnState?.currentPlayer;
+    prevAnimating.current = animating;
   }, [turnState?.currentPlayer, animating]);
 
   if (!turnState) {
@@ -149,7 +94,7 @@ export function GameScreen({ connection, playerName, isHost }: Props) {
   const me = turnState.players.find(p => p.name === playerName);
 
   return (
-    <div className="h-dvh bg-gray-900 text-white p-2 pb-8 pt-3 flex flex-col gap-1.5 overflow-hidden">
+    <div className="h-dvh bg-gray-900 text-white p-2 pb-6 pt-3 flex flex-col gap-1.5 overflow-hidden">
       {/* Turn indicator */}
       <div className={`text-center py-1 rounded font-bold text-lg flex items-center justify-center gap-2 relative ${isMyTurn ? "bg-green-700" : "bg-gray-700"}`}>
         {(() => {
@@ -158,42 +103,18 @@ export function GameScreen({ connection, playerName, isHost }: Props) {
             ? <span className="w-7 h-7 flex items-center justify-center text-lg">{current.emoji || '🤖'}</span>
             : <img src={`/avatars/avatar_${current?.avatar ?? 0}.png`} className="w-7 h-7 rounded-full" />;
         })()}
-        {isMyTurn ? `Your Turn ${me?.name}` : `Waiting for ${turnState.currentPlayer}`}
+        {isMyTurn ? "Your Turn" : `${turnState.currentPlayer}`}
         {isHost && (
           <button
             onClick={() => setShowRestart(true)}
-            className="absolute right-2 text-xs text-gray-400 bg-gray-800 px-2 py-0.5 rounded"
+            className="absolute left-2 text-xs text-gray-400 bg-gray-800 px-2 py-0.5 rounded"
           >
             ↺
           </button>
         )}
       </div>
 
-      {showRestart && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="rounded-xl p-5 max-w-sm w-full bg-gray-800 border-2 border-red-500 text-center space-y-3">
-            <div className="text-lg font-bold text-red-400">Restart Game?</div>
-            <button
-              onClick={() => { setShowRestart(false); connection.invoke("RestartGame"); }}
-              className="w-full bg-amber-600 py-2 rounded-lg font-bold"
-            >
-              Rematch (same players)
-            </button>
-            <button
-              onClick={() => { setShowRestart(false); connection.invoke("NewGame"); }}
-              className="w-full bg-red-600 py-2 rounded-lg font-bold"
-            >
-              Full Reset (everyone rejoins)
-            </button>
-            <button
-              onClick={() => setShowRestart(false)}
-              className="w-full bg-gray-600 py-2 rounded-lg text-sm"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
+      {showRestart && <RestartModal connection={connection} onClose={() => setShowRestart(false)} />}
 
       {error && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
@@ -218,74 +139,57 @@ export function GameScreen({ connection, playerName, isHost }: Props) {
       })()}
 
       {/* Last roll */}
-      {lastRoll && (
-        <div className="text-center text-sm truncate">
-          <span className="text-gray-300">{COMPANIES[lastRoll.colour]}</span>{" "}
-          {lastRoll.effect === "Slump" ? (
-            <span className="text-red-400">▼ SLUMP!</span>
-          ) : lastRoll.effect === "MarketNews" ? (
-            <span className="text-yellow-400">📰 {lastRoll.cardText}</span>
+      <div className="text-sm overflow-hidden whitespace-nowrap h-5 relative">
+        {lastRoll && (
+          lastRoll.effect === "MarketNews" ? (
+            <span className="text-yellow-400 absolute animate-ticker">
+              <span className="font-bold" style={{ color: COMPANY_COLOURS[lastRoll.colour] }}>{COMPANIES[lastRoll.colour]}</span>{" "}
+              📰 {lastRoll.cardText}
+            </span>
           ) : (
-            <span className="text-green-400">▲({lastRoll.number})</span>
-          )}
-        </div>
-      )}
+            <div className="text-center">
+              <span className="font-bold" style={{ color: COMPANY_COLOURS[lastRoll.colour] }}>{COMPANIES[lastRoll.colour]}</span>{" "}
+              {lastRoll.effect === "Slump" ? (
+                <span className="text-red-400">📉 {lastRoll.cardText || "SLUMP!"}</span>
+              ) : (
+                <span className="text-green-400">▲({lastRoll.number})</span>
+              )}
+            </div>
+          )
+        )}
+      </div>
 
-      {/* Effect modal */}
+      {/* Dividend modal */}
       {roundEnd && <DividendModal result={roundEnd.result} holdings={roundEnd.holdings} onDismiss={() => { setRoundEnd(null); setAnimating(false); roundEndRef.current = false; }} />}
 
       {/* Companies - buy/sell */}
       <div className="flex flex-col gap-1 flex-1 min-h-0">
-        {turnState.companies.map((c) => {
-          const held = me?.holdings[c.index] ?? 0;
-          const price = c.price / 100;
-          const cost = price + 5;
-          if (c.isBankrupt) {
-            return (
-              <div key={c.index} className="rounded px-2.5 py-1.5 bg-gray-800 opacity-40">
-                <div className="font-bold text-gray-500">{COMPANIES[c.index]} <span className="text-xs">💀 BANKRUPT</span></div>
-              </div>
-            );
-          }
-          return (
-            <div key={c.index} className="rounded px-2.5 py-1.5 flex items-center justify-between" style={{ backgroundColor: `${COMPANY_COLOURS[c.index]}30` }}>
-              <div>
-                <div className="font-bold">{COMPANIES[c.index]} <span className="text-sm text-gray-400 font-normal">£{price}</span></div>
-                <div className={`text-xs ${held > 0 ? "text-gray-200" : "text-gray-400"}`}>{held} held</div>
-              </div>
-              {isMyTurn && (
-                <div className="flex gap-1.5">
-                  <button
-                    onClick={() => { setError(""); connection.invoke("BuyShares", c.index); }}
-                    className="bg-blue-600 w-20 py-0.5 rounded text-sm font-bold"
-                  >
-                    Buy £{cost}
-                  </button>
-                  <button
-                    onClick={() => { setError(""); connection.invoke("SellShares", c.index); }}
-                    className={`w-12 py-0.5 rounded text-sm font-bold ${held > 0 ? "bg-red-600" : "invisible"}`}
-                  >
-                    Sell
-                  </button>
-                </div>
-              )}
-            </div>
-          );
-        })}
+        {turnState.companies.map((c) => (
+          <CompanyRow
+            key={c.index}
+            index={c.index}
+            price={c.price}
+            held={me?.holdings[c.index] ?? 0}
+            isBankrupt={c.isBankrupt}
+            isMyTurn={isMyTurn}
+            connection={connection}
+            onError={() => setError("")}
+          />
+        ))}
       </div>
 
       {/* Roll button */}
       {isMyTurn && (
         <button
           onClick={() => { setError(""); connection.invoke("RollDice"); }}
-          className=" bg-green-600 mt-6 px-6 py-2 rounded-xl text-xl font-bold"
+          className="bg-green-600 mt-auto px-6 py-2 rounded-xl text-xl font-bold"
         >
           🎲 Roll Dice
         </button>
       )}
 
       {/* Debug */}
-      {import.meta.env.DEV && (
+      {import.meta.env.DEV && false && (
         <div className="absolute top-1 right-1 flex gap-1">
           <button
             onClick={() => connection.invoke("DebugBankruptcy", 0)}

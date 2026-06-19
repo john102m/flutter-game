@@ -1,5 +1,66 @@
 # Flutter — Progress Log
 
+## 2026-06-19 Session — Playtest Fixes & Component Extraction
+
+### Completed
+
+- **SignalR reconnect resilience** — escalating retry schedule (0/1/2/5/10/30s), auto-rejoin on reconnect, reconnecting/disconnected overlay on handset
+- **Persistent rejoin** — switched from `sessionStorage` to `localStorage` (flutter_ prefix). Closing browser entirely and reopening now auto-rejoins
+- **Slump headlines** — new `SlumpHeadlines.cs` with 15 funny headlines (same pattern as Market News). Server sends text in BoardEffect, TV and handset display it
+- **Round-end coloured arrows** — separate `secondaryText`/`secondaryColor` on overlay cards. Green ▲ for price up, red ▼ for down, body text stays black
+- **Anti-slump badge position** — nudged above ticker (bottom=48dp)
+- **TV Market News card text** — bumped to 18/20/22sp, body bold
+- **Handset Market News ticker** — CSS keyframe scroll animation, immediate start, absolute positioned in fixed-height container
+- **Layout stability** — last roll container always rendered (h-5 placeholder), no more layout shift when first roll arrives
+- **AI round-end delay** — server waits for overlay cards + 3s buffer before AI takes turn after round end
+- **TV ticker reset** — clears lastTrade/previousPrices/snapshotPrices on GameReset and GameRematch
+- **Held shares highlight** — company row background lighter (opacity 80 vs 30) when player holds shares
+- **Restart button** — moved to left side of turn indicator
+- **Component extraction** — GameScreen.tsx split from 319→210 lines: extracted `DividendModal`, `CompanyRow`, `RestartModal`, shared `constants.ts`
+
+### Files Changed
+
+- `handset/src/hooks/useConnection.ts` — reconnect + status
+- `handset/src/App.tsx` — localStorage, reconnecting overlay
+- `handset/src/components/GameScreen.tsx` — refactored, uses extracted components
+- `handset/src/components/DividendModal.tsx` — new
+- `handset/src/components/CompanyRow.tsx` — new
+- `handset/src/components/RestartModal.tsx` — new
+- `handset/src/components/constants.ts` — new
+- `handset/src/index.css` — ticker animation
+- `server/.../Models/SlumpHeadlines.cs` — new
+- `server/.../Services/GameService.cs` — slump headline in BoardEffect
+- `server/.../Hubs/GameHub.cs` — AI round-end delay
+- `tv/.../ui/GameScreen.kt` — badge position, card text sizes, ticker reset, coloured arrows
+- `tv/.../ui/OverlayCardQueue.kt` — secondaryText/secondaryColor field
+
+---
+
+## 2026-06-18 Session (Evening) — AI Players, Stock Ticker & Headlines
+
+### Completed
+
+- **Share supply limit** — 10 certificates per company enforced in BuyShares
+- **AI players (full feature)**:
+  - 3 personalities: Gordon Gekko 🦈 (aggressive), Warren Buffett 🦉 (cautious), Jordan Belfort 🐺 (chaotic)
+  - Server-side Option A — no extra client, GameService drives bot turns
+  - Host adds via "Add AI" button in lobby, random personality assignment, max 3
+  - Adaptive timing — mirrors human pace (rolling avg of last 10 turns × 0.7 × danger multiplier)
+  - Session memory — tracks dividends, slumps, human trade sentiment per company; AI weights decisions accordingly
+  - Personality emojis on handset (lobby + turn indicator) and TV (player panel)
+  - No add/remove after game starts
+- **Stock ticker (TV)** — Bloomberg-style scrolling bar at bottom of screen:
+  - Company names in brand colours, prices, direction arrows (▲▼━)
+  - 🔥 for companies near dividend zone, ↑ for action zone
+  - Last trade flash, current leader, hottest stock (most certs held)
+- **Company news headlines** — funny flavour text on Market News cards instead of dry 1966 descriptions (e.g. "Shell discovers oil in CEO's back garden")
+- **Dividend cha-ching sound** — now plays during round-end overlay cards
+- **Handset ticker branded** — company name shows in brand colour + bold
+- **TV layout tweaks** — board padding adjusted, ticker below board not overlapping
+- **Feature ideas doc** — `docs/FEATURE-IDEAS.md` with effort estimates
+
+---
+
 ## 2026-06-18 Session (Morning) — Icons, Tick Animation & Turn Vibe
 
 ### Completed

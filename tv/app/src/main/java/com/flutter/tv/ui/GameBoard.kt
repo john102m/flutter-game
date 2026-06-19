@@ -27,7 +27,7 @@ data class CompanyDef(val name: String, val color: Color) {
 }
 
 val companyDefs = listOf(
-    CompanyDef("Aramco", Color(0xFF1565C0)),
+    CompanyDef("Aramco", Color(0xFF0D47A1)),
     CompanyDef("Exxon", Color(0xFFE53935)),
     CompanyDef("Shell", Color(0xFF43A047)),
     CompanyDef("Chevron", Color(0xFF1E88E5)),

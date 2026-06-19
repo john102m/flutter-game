@@ -80,8 +80,9 @@ public class AiPlayerService(GameService gameService, SessionMemory memory, IHub
         await hubContext.Clients.All.SendAsync("DiceRolled", result.ColourDie, result.NumberDie,
             result.Effect?.Type ?? "", result.Effect?.CardText ?? "", CompanyName(result.ColourDie), result.LandedRow);
 
-        // 1s delay — let dice animation land before pegs move
-        await Task.Delay(1000);
+        // Wait for TV animations: dice spin (3s) + effect card if any (4.5s)
+        var postRollDelay = result.Effect != null ? 7500 : 3000;
+        await Task.Delay(postRollDelay);
 
         if (result.Winner != null)
             await hubContext.Clients.All.SendAsync("GameOver", result.Winner, result.WinnerCapital, result.WinReason);
@@ -90,6 +91,10 @@ public class AiPlayerService(GameService gameService, SessionMemory memory, IHub
             await hubContext.Clients.All.SendAsync("RoundEnd", result.RoundEnd);
             if (result.RoundEnd.Winner != null)
                 await hubContext.Clients.All.SendAsync("GameOver", result.RoundEnd.Winner, result.RoundEnd.WinnerCapital, result.RoundEnd.WinReason);
+
+            // Wait for TV overlay cards to finish (intro + 6 companies + winner = ~2.4s each)
+            var cardCount = result.RoundEnd.Companies.Length + 1 + (result.RoundEnd.Winner != null ? 1 : 0);
+            await Task.Delay(cardCount * 2500);
         }
 
         await BroadcastTurnState(game);
